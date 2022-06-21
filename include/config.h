@@ -88,4 +88,13 @@ typedef struct {
     double value;
 } complement;
 
+// Numero di ripetizioni e batch
+#define NUM_REPETITIONS 128
+#define BATCH_B 1024
+#define BATCH_K 128
+
 // --------------------------------------------------------------------------------------------------
+
+//finite_horizon_simulation 
+#define STOP_SIMULATION 3
+
