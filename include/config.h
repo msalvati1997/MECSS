@@ -1,4 +1,6 @@
 #define NUM_BLOCKS 6
+#define START 0.0
+#define STOP  (100.0 * 24.0 * 60.0 * 60.0)
 
 //Input values
 #define LAMBDA_REMOTE
@@ -17,6 +19,12 @@
 #define DELAY_FROM_EDGE_TO_CLOUD 1
 #define DELAY_TO_EDGE 0.1
 
+#define ONLINE 0
+#define OFFLINE 1
+#define LOSS_SYSTEM 0
+#define NOT_LOSS_SYSTEM 1
+
+int streamID; 
 
 //data structure
 // Struttura che mantiene il clock
@@ -63,6 +71,7 @@ struct area {
     double service; /* time integrated number in service */
 };
 
+
 // Blocco
 struct block {
     struct job *head_service;
@@ -88,10 +97,14 @@ typedef struct {
     double value;
 } complement;
 
+struct block blocks[NUM_BLOCKS];
+
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
 #define BATCH_B 1024
 #define BATCH_K 128
+
+
 
 // --------------------------------------------------------------------------------------------------
 
