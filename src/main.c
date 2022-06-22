@@ -79,9 +79,11 @@ void dequeue(block *block) {
 }
 
 // Ritorna il primo server libero nel blocco specificato
-server *findFreeServer(block b) {
-    int block_type = b.type;
-    for (int i = 0; i < b.num_servers; i++) {
+server *findFreeServer(block *b) {
+    for (int i = 0; i < b->num_servers; i++) {
+        if(((*(b->serv)+i)->status)==IDLE){
+            return *(b->serv)+i;
+        }
     }
     return NULL;
 }
@@ -129,7 +131,8 @@ int initialize() {
 
    (*control_unit)->id=0;
    printf("1\n");
-   (*control_unit)->status=ONLINE;
+   (*control_unit)->status=IDLE;
+   (*control_unit)->online=ONLINE;
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
    streamID=streamID++;
@@ -138,7 +141,8 @@ int initialize() {
    printf("control_unit initialized\n");
    for(int i=0;i<blocks[1].num_servers;i++) {
        (*video_unit+i)->id=i;
-       (*video_unit+i)->status=ONLINE;
+       (*video_unit+i)->status=IDLE;
+       (*video_unit+i)->online=ONLINE;
        (*video_unit+i)->loss=LOSS_SYSTEM;
        (*video_unit+i)->stream=streamID++;
        (*video_unit+i)->block=&blocks[1];  
@@ -147,7 +151,8 @@ int initialize() {
 
    for(int i=0;i<blocks[2].num_servers;i++) {
          (*wlan_unit+i)->id=i;
-         (*wlan_unit+i)->status=ONLINE;
+         (*wlan_unit+i)->status=IDLE;
+         (*wlan_unit+i)->online=ONLINE;
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
          (*wlan_unit+i)->stream=streamID++;
          (*wlan_unit+i)->block=&blocks[2];
@@ -155,7 +160,8 @@ int initialize() {
    }
 
    (*enode_unit)->id=6;
-   (*enode_unit)->status=ONLINE;
+   (*enode_unit)->status=IDLE;
+   (*enode_unit)->online=ONLINE;
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
    (*enode_unit)->stream=streamID++;
    (*enode_unit)->block=&blocks[3];
@@ -163,7 +169,8 @@ int initialize() {
    
    for(int i=0;i<blocks[4].num_servers;i++) {
           (*edge_unit+i)->id=i;
-          (*edge_unit+i)->status=ONLINE;
+          (*edge_unit+i)->status=IDLE;
+          (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
           (*edge_unit+i)->block=&blocks[4];
@@ -171,7 +178,8 @@ int initialize() {
    }
 
    (*cloud_unit)->id=11;
-   (*cloud_unit)->status=ONLINE;
+   (*cloud_unit)->status=IDLE;
+   (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
    (*cloud_unit)->block=&blocks[5];
