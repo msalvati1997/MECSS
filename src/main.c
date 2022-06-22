@@ -88,6 +88,137 @@ server *findFreeServer(block *b) {
     return NULL;
 }
 
+// Processa un arrivo dall'esterno verso il sistema
+void process_arrival() {
+    blocks[0].total_arrivals++;
+    blocks[0].jobInBlock++;
+
+    server *s = findFreeServer(blocks[0]);
+
+    // C'è un servente libero, quindi genero il completamento
+    if (s != NULL) {
+        double serviceTime = getService(CONTROL_UNIT, s->stream);
+        compl c = {s, INFINITY};
+        c.value = clock.current + serviceTime;
+        s->status = BUSY;  // Setto stato busy
+        s->sum.service += serviceTime;
+        s->block->area.service += serviceTime;
+        s->sum.served++;
+        //insertSorted(, c); ??????
+        enqueue(&blocks[0], clock.arrival);  // lo appendo nella linked list di job del blocco 
+    } else {
+        enqueue(&blocks[0], clock.arrival);  // lo appendo nella linked list di job del blocco 
+        blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
+    }
+    clock.arrival = getArrival(clock.current);  // Genera prossimo arrivo
+}
+
+// Processa un next-event di completamento
+void process_completion(compl c) {
+    int block_type = c.server->block->type;
+    blocks[block_type].total_completions++;
+    blocks[block_type].jobInBlock--;
+
+    int destination;
+    server *freeServer;
+
+    dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
+    //deleteElement(&global_sorted_completions, c); ??????
+
+    // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
+    if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
+        blocks[block_type].jobInQueue--;
+        double service_1 = getService(block_type, c.server->stream);
+        c.value = clock.current + service_1;
+        c.server->sum.service += service_1;
+        c.server->sum.served++;
+        c.server->block->area.service += service_1;
+        //insertSorted(&global_sorted_completions, c); ?????????????????????
+
+    } else {
+        c.server->status = IDLE;
+    }
+
+    // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
+    if (c.server->need_resched) { //WLAN - INTERMITTENT
+        c.server->online = OFFLINE;
+        c.server->time_online += (clock.current - c.server->last_online);
+        c.server->last_online = clock.current;
+        c.server->need_resched = false;
+    }
+
+    //uscita dalla rete se il blocco esce dal CLOUD
+    if (block_type == CLOUD_UNIT) {
+        completed++;
+        return;
+    }
+
+    // Gestione blocco destinazione
+    //destination = getDestination(c.server->block->type);  // Trova la destinazione adatta per il job appena servito ??
+    if (destination == EXIT) {
+       // blocks[block_type].total_dropped++; ??
+       // dropped++; ??
+        return;
+    }
+    if (destination != CLOUD_UNIT) {
+        blocks[destination].total_arrivals++;
+        blocks[destination].jobInBlock++;
+        enqueue(&blocks[destination], c.value);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
+
+        // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
+        freeServer = findFreeServer(blocks[destination]);
+        if (freeServer != NULL) {
+            compl c2 = {freeServer, INFINITY};
+            double service_2 = getService(destination, freeServer->stream);
+            c2.value = clock.current + service_2;
+            //insertSorted(&global_sorted_completions, c2);  ??????????????????'
+            freeServer->status = BUSY;
+            freeServer->sum.service += service_2;
+            freeServer->sum.served++;
+            freeServer->block->area.service += service_2;
+
+            return;
+        } else {
+            blocks[destination].jobInQueue++; // .. vedere in base alla perdita IF FRAME_VIDEO...
+            return;
+        }
+    }
+}
+
+// Ritorna il blocco destinazione di un job dopo il suo completamento
+int getDestination(enum block_types from) {
+    switch (from) {
+        case CONTROL_UNIT:
+        // -> se tipo di job è richiesta di frame va su video_unit altrimenti su DISPATCHER 
+        // -> DISPATCHER : andare su WLAN o ENODE??
+        case VIDEO_UNIT:
+         /// -> control_unit -- ricordarsi perdita
+        case WLAN_UNIT:
+        // -> edge 
+        case ENODE_UNIT:
+        // -> edge
+        case EDGE_UNIT:
+        // -> cloud 
+        case CLOUD_UNIT:
+             return EXIT;
+             break;
+    }
+}
+
+// Inserisce un elemento nella lista ordinata
+int insertSorted(sorted_completions *compls, compl completion) {
+    int i;
+    int n = compls->num_completions;
+
+    for (i = n - 1; (i >= 0 && (compls->sorted_list[i].value > completion.value)); i--) {
+        compls->sorted_list[i + 1] = compls->sorted_list[i];
+    }
+    compls->sorted_list[i + 1] = completion;
+    compls->num_completions++;
+
+    return (n + 1);
+}
+
 int initialize() {
    streamID=0;
    clock.current = START;

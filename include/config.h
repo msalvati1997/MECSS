@@ -74,6 +74,7 @@ enum block_types {
     VIDEO_UNIT,
     WLAN_UNIT,
     ENODE_UNIT,
+    EDGE_UNIT,
     CLOUD_UNIT,
 };
 
