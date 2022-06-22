@@ -6,15 +6,11 @@
 #define INFINITY (100.0 * STOP)
 
 //Input values
-//#define LAMBDA_REMOTE 
-//#define LAMBDA_VIDEO
-
-
-#define WLAN_P 0.3
+#define WLAN_P 0.11
 #define ARRIVAL_RATE 100.0
 
 //services time 
-#define CONTROL_UNIT_SERVICE_TIME 0,7831325201
+#define CONTROL_UNIT_SERVICE_TIME 0.7831325201
 #define VIDEO_SERVICE_TIME 1.0  //acquisizione di un frame da video service
 #define WLAN_FRAME_UPLOAD_TIME 4.33333333333 //us
 #define ENODE_FRAME_UPLOAD_TIME 13.0
