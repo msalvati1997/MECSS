@@ -9,8 +9,9 @@
 //#define LAMBDA_REMOTE 
 //#define LAMBDA_VIDEO
 
+
 #define WLAN_P 0.3
-#define ARRIVAL_RATE 100
+#define ARRIVAL_RATE 100.0
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 0.1
@@ -37,6 +38,11 @@
 #define BATCH_B 1024
 #define BATCH_K 128
 
+#define handle_error(msg)   \
+    do {                    \
+        perror(msg);        \
+        exit(EXIT_FAILURE); \
+    } while (0)
 
 int streamID; 
 typedef struct server_t server;

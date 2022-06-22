@@ -41,7 +41,7 @@ double getService(int type_service, int stream) {
 void enqueue(block *block, double arrival) {
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
-        //handle_error("malloc");
+        handle_error("malloc");
 
     j->arrival = arrival;
     j->next = NULL;
@@ -190,6 +190,7 @@ int initialize() {
    memcpy(blocks[5].serv, &cloud_unit, sizeof(cloud_unit));
 
    clock.arrival = getArrival(clock.current);
+   printf("%f\n",clock.arrival);
    printf("finish initialized\n");
 }
  
@@ -197,5 +198,15 @@ int initialize() {
 int main(void) {
    printf("Welcome\n");
    initialize();
-  // printf("%ld\n",sizeof(blocks[0].serv));
+   printf("%ld\n",blocks[0].num_servers);
+   printf("%ld\n",blocks[1].num_servers);
+   printf("%ld\n",blocks[2].num_servers);
+   printf("%ld\n",blocks[3].num_servers);
+   printf("%ld\n",blocks[4].num_servers);
+   printf("%ld\n",blocks[5].num_servers);
+
+   enqueue(&blocks[0],2305345.0);
+   double arrival =blocks[0].head_queue->arrival;
+   printf("job in queueu %f\n",arrival);
+
 }
