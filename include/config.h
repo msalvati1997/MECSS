@@ -1,10 +1,10 @@
 #define NUM_BLOCKS 6
 #define START 0.0
-#define STOP  (100.0 * 24.0 * 60.0 * 60.0)
+#define STOP  20000.0 //100.0 * 24.0 * 60.0 * 60.0
 
 //Input values
-#define LAMBDA_REMOTE
-#define LAMBDA_VIDEO
+//#define LAMBDA_REMOTE 
+//#define LAMBDA_VIDEO
 #define WLAN_P 0.3
 
 //services time 
@@ -45,13 +45,15 @@ struct sum {
 struct job {
     double arrival;
     struct job *next;
+    int type; //local or remote
 };
 
 // Servente
 typedef struct server_t {
     int id;
     int stream;
-    int status; //{ONLINE=0,OFFLINE=1}
+    int online; //{ONLINE=0,OFFLINE=1}
+    int status; //{BUSY=0,IDLE=1}
     struct block *block;
     struct sum sum;
     bool need_resched;
