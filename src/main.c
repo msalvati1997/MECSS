@@ -1,12 +1,17 @@
+#include "../include/config.h"
+#include "../include/rngs.h"
+#include "../include/rvgs.h"
+#include "../include/rvms.h"
+#include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <config.h>
-
+#include <string.h>
 
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
-    arrival += Exponential(1 / arrival_rate);
+    arrival += Exponential(1 / ARRIVAL_RATE);
     return arrival;
 }
 
@@ -14,7 +19,7 @@ double getArrival(double current) {
 double getService(int type_service, int stream) {
     SelectStream(stream);
 
-    switch (type) {
+    switch (type_service) {
         case 0:
             return Exponential(CONTROL_UNIT_SERVICE_TIME);
         case 1:
@@ -33,10 +38,10 @@ double getService(int type_service, int stream) {
 }
 
 // Inserisce un job nella coda del blocco specificata
-void enqueue(struct block *block, double arrival) {
-    struct job *j = (struct job *)malloc(sizeof(struct job));
+void enqueue(block *block, double arrival) {
+    job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
-        handle_error("malloc");
+        //handle_error("malloc");
 
     j->arrival = arrival;
     j->next = NULL;
@@ -55,8 +60,8 @@ void enqueue(struct block *block, double arrival) {
 
 
 // Rimuove il job dalla coda del blocco specificata
-void dequeue(struct block *block) {
-    struct job *j = block->head_service;
+void dequeue(block *block) {
+    job *j = block->head_service;
 
     if (!j->next)
         block->tail = NULL;
@@ -64,7 +69,7 @@ void dequeue(struct block *block) {
     block->head_service = j->next;
 
     if (block->head_queue != NULL && block->head_queue->next != NULL) {
-        struct job *tmp = block->head_queue->next;
+        job *tmp = block->head_queue->next;
         block->head_queue = tmp;
     } else {
         block->head_queue = NULL;
@@ -72,7 +77,13 @@ void dequeue(struct block *block) {
     free(j);
 }
 
-
+// Ritorna il primo server libero nel blocco specificato
+server *findFreeServer(block b) {
+    int block_type = b.type;
+    for (int i = 0; i < b.num_servers; i++) {
+    }
+    return NULL;
+}
 
 int initialize() {
    streamID=0;
@@ -88,72 +99,77 @@ int initialize() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
+   control_unit=calloc(1,sizeof(server*));
+   blocks[0].num_servers=1; //control unit
 
-   control_unit->id=0;
-   control_unit->status=ONLINE;
-   control_unit->loss=NOT_LOSS_SYSTEM;
-   control_unit->stream=streamID++;
-   control_unit->block=&blocks[0];
+   video_unit=calloc(2,sizeof(server*));
+   blocks[1].num_servers=2; //video 
 
-   video_unit->id=2;
-   video_unit->status=ONLINE;
-   video_unit->loss=LOSS_SYSTEM;
-   video_unit->stream=streamID++;
-   video_unit->block=&blocks[1];
+   wlan_unit=calloc(2,sizeof(server*));
+   blocks[2].num_servers=2; //wlan 
+ 
+   enode_unit=calloc(1,sizeof(server*));
+   blocks[3].num_servers=1; //enode 
 
-   video_unit->id=3;
-   video_unit->status=ONLINE;
-   video_unit->loss=LOSS_SYSTEM;
-   video_unit->stream=streamID++;
-   video_unit->block=&blocks[1];
+   edge_unit=calloc(4,sizeof(server*));
+   blocks[4].num_servers=4; //edge
 
-   wlan_unit->id=4;
-   wlan_unit->status=ONLINE;
-   wlan_unit->loss=NOT_LOSS_SYSTEM;
-   wlan_unit->stream=streamID++;
-   wlan_unit->block=&blocks[2];
+   cloud_unit=calloc(1,sizeof(server*));
+   blocks[5].num_servers=1; //cloud
 
-   wlan_unit->id=5;
-   wlan_unit->status=ONLINE;
-   wlan_unit->loss=NOT_LOSS_SYSTEM;
-   wlan_unit->stream=streamID++;
-   wlan_unit->block=&blocks[2];
+   (*control_unit)->id=0;
+   (*control_unit)->status=ONLINE;
+   (*control_unit)->loss=NOT_LOSS_SYSTEM;
+   (*control_unit)->stream=streamID++;
+   streamID=streamID++;
+   (*control_unit)->block=&blocks[0];
+  
+   for(int i=0;i<blocks[1].num_servers;i++) {
+       (*video_unit+i)->id=i;
+       (*video_unit+i)->status=ONLINE;
+       (*video_unit+i)->loss=LOSS_SYSTEM;
+       (*video_unit+i)->stream=streamID++;
+       (*video_unit+i)->block=&blocks[1];  
+       streamID=streamID++;
+   }
 
-   enode_unit->id=6;
-   enode_unit->status=ONLINE;
-   enode_unit->loss=NOT_LOSS_SYSTEM;
-   enode_unit->stream=streamID++;
-   enode_unit->block=&blocks[3];
+   for(int i=0;i<blocks[2].num_servers;i++) {
+         (*wlan_unit+i)->id=i;
+         (*wlan_unit+i)->status=ONLINE;
+         (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
+         (*wlan_unit+i)->stream=streamID++;
+         (*wlan_unit+i)->block=&blocks[2];
+         streamID=streamID++;
+   }
 
-   edge_unit->id=7;
-   edge_unit->status=ONLINE;
-   edge_unit->loss=NOT_LOSS_SYSTEM;
-   edge_unit->stream=streamID++;
-   edge_unit->block=&blocks[4];
+   (*enode_unit)->id=6;
+   (*enode_unit)->status=ONLINE;
+   (*enode_unit)->loss=NOT_LOSS_SYSTEM;
+   (*enode_unit)->stream=streamID++;
+   (*enode_unit)->block=&blocks[3];
+   streamID=streamID++;
+   
+   for(int i=0;i<blocks[4].num_servers;i++) {
+          (*edge_unit+i)->id=i;
+          (*edge_unit+i)->status=ONLINE;
+          (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
+          (*edge_unit+i)->stream=streamID++;
+          (*edge_unit+i)->block=&blocks[4];
+          streamID=streamID++;
+   }
 
-   edge_unit->id=8;
-   edge_unit->status=ONLINE;
-   edge_unit->loss=NOT_LOSS_SYSTEM;
-   edge_unit->stream=streamID++;
-   edge_unit->block=&blocks[4];
+   (*cloud_unit)->id=11;
+   (*cloud_unit)->status=ONLINE;
+   (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
+   (*cloud_unit)->stream=streamID++;
+   (*cloud_unit)->block=&blocks[5];
 
-   edge_unit->id=9;
-   edge_unit->status=ONLINE;
-   edge_unit->loss=NOT_LOSS_SYSTEM;
-   edge_unit->stream=streamID++;
-   edge_unit->block=&blocks[4];
-
-   edge_unit->id=10;
-   edge_unit->status=ONLINE;
-   edge_unit->loss=NOT_LOSS_SYSTEM;
-   edge_unit->stream=streamID++;
-   edge_unit->block=&blocks[4];
-
-   cloud_unit->id=11;
-   cloud_unit->status=ONLINE;
-   cloud_unit->loss=NOT_LOSS_SYSTEM;
-   cloud_unit->stream=streamID++;
-   cloud_unit->block=&blocks[5];
+   memcpy(blocks[0].serv, &control_unit, sizeof(server*)*1);
+   memcpy(blocks[1].serv, &control_unit, sizeof(server*)*2);
+   memcpy(blocks[2].serv, &wlan_unit, sizeof(server*)*2);
+   memcpy(blocks[3].serv, &enode_unit, sizeof(server*)*1);
+   memcpy(blocks[4].serv, &edge_unit, sizeof(server*)*4);
+   memcpy(blocks[5].serv, &edge_unit, sizeof(server*)*1);
 
    clock.arrival = getArrival(clock.current);
 }
@@ -161,4 +177,5 @@ int initialize() {
 
 int main(void) {
    printf("Hello, World!");
+   initialize();
 }
