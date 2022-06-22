@@ -5,18 +5,18 @@
 //Input values
 //#define LAMBDA_REMOTE 
 //#define LAMBDA_VIDEO
-#define WLAN_P 0.3
+#define WLAN_P 0.11
 
 //services time 
-#define CONTROL_UNIT_SERVICE_TIME 0.1
-#define VIDEO_SERVICE_TIME 0.34  //acquisizione di un frame da video service
-#define WLAN_FRAME_UPLOAD_TIME 0.34 //us
-#define ENODE_FRAME_UPLOAD_TIME 0.10
-#define EDGE_PROCESSING_TIME 0.20
-#define CLOUD_PROCESSING_TIME 0.30
+#define CONTROL_UNIT_SERVICE_TIME 0,7831325201
+#define VIDEO_SERVICE_TIME 1.0  //acquisizione di un frame da video service
+#define WLAN_FRAME_UPLOAD_TIME 4.33333333333 //us
+#define ENODE_FRAME_UPLOAD_TIME 13.0
+#define EDGE_PROCESSING_TIME 0.86666666666
+#define CLOUD_PROCESSING_TIME 0.4642857142
 
 //delay
-#define DELAY_FROM_EDGE_TO_CLOUD 1
+#define DELAY_FROM_EDGE_TO_CLOUD 1.0
 #define DELAY_TO_EDGE 0.1
 
 #define ONLINE 0
