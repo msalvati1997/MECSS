@@ -23,11 +23,11 @@
 
 #define ONLINE 0
 #define OFFLINE 1
-#define BUSY 0
-#define IDLE 1
-#define LOSS_SYSTEM 0
-#define NOT_LOSS_SYSTEM 1
-
+#define BUSY 2
+#define IDLE 3
+#define LOSS_SYSTEM 4
+#define NOT_LOSS_SYSTEM 5
+#define EXIT 32
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
 #define BATCH_B 1024
@@ -42,7 +42,7 @@
 int streamID; 
 typedef struct server_t server;
 typedef struct block_t block;
-typedef struct complement_t complement;
+typedef struct complement_t compl;
 typedef struct job_t job;
 
 

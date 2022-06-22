@@ -93,7 +93,7 @@ void process_arrival() {
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
-    server *s = findFreeServer(blocks[0]);
+    server *s = findFreeServer(&blocks[0]);
 
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
@@ -142,19 +142,16 @@ void process_completion(compl c) {
     // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
     if (c.server->need_resched) { //WLAN - INTERMITTENT
         c.server->online = OFFLINE;
-        c.server->time_online += (clock.current - c.server->last_online);
-        c.server->last_online = clock.current;
         c.server->need_resched = false;
     }
 
     //uscita dalla rete se il blocco esce dal CLOUD
     if (block_type == CLOUD_UNIT) {
-        completed++;
         return;
     }
 
     // Gestione blocco destinazione
-    //destination = getDestination(c.server->block->type);  // Trova la destinazione adatta per il job appena servito ??
+    destination = getDestination(c.server->block->type);  // Trova la destinazione adatta per il job appena servito ??
     if (destination == EXIT) {
        // blocks[block_type].total_dropped++; ??
        // dropped++; ??
@@ -166,7 +163,7 @@ void process_completion(compl c) {
         enqueue(&blocks[destination], c.value);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
 
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
-        freeServer = findFreeServer(blocks[destination]);
+        freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
             compl c2 = {freeServer, INFINITY};
             double service_2 = getService(destination, freeServer->stream);
@@ -206,17 +203,8 @@ int getDestination(enum block_types from) {
 }
 
 // Inserisce un elemento nella lista ordinata
-int insertSorted(sorted_completions *compls, compl completion) {
-    int i;
-    int n = compls->num_completions;
-
-    for (i = n - 1; (i >= 0 && (compls->sorted_list[i].value > completion.value)); i--) {
-        compls->sorted_list[i + 1] = compls->sorted_list[i];
-    }
-    compls->sorted_list[i + 1] = completion;
-    compls->num_completions++;
-
-    return (n + 1);
+int insertSorted() {
+  
 }
 
 int initialize() {
@@ -334,20 +322,7 @@ int initialize() {
    printf("finish initialized\n");
 }
 
-//===========================================================================
-//=  Recursive function to solve for Erlang-B blocking probability          =
-//=   - Input is c = number of servers and a = total offered load           =
-//=   - Output returned is Erlang-B blocking probability                    =
-//===========================================================================
-double E(int c, double a)
-{
-  double     e_last;        // Last E() value
 
-  if (c == 0)
-    return(1.0);
-  else
-    return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
-}
  
 
 int main(void) {
@@ -365,12 +340,9 @@ int main(void) {
    printf("job in queueu %f\n",arrival);
      // Compute Erlang-B blocking probability using recursive function E()
 
-   double     a;             // Total offered load
-   double     rho;           // Utilization per server
+ 
    double     prob_block;    // Erlang-B blocking probability
-   int        num_servers;
-   a = ARRIVAL_RATE / VIDEO_SERVICE_TIME;
-   num_servers=2.0;
+  
    prob_block = E(2, 0.67);
    printf("= Pr[block] (Erlang-B) = %f \n", prob_block);
   
