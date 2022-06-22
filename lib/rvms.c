@@ -44,7 +44,7 @@
  */
 
 #include <math.h>
-#include "rvms.h"
+#include "../include/rvms.h"
 
 #define TINY    1.0e-10
 #define SQRT2PI 2.506628274631               /* sqrt(2 * pi) */

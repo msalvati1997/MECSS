@@ -34,7 +34,7 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "rngs.h"
+#include "../include/rngs.h"
 
 #define MODULUS    2147483647 /* DON'T CHANGE THIS VALUE                  */
 #define MULTIPLIER 48271      /* DON'T CHANGE THIS VALUE                  */

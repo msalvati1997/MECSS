@@ -176,6 +176,7 @@ int initialize() {
  
 
 int main(void) {
-   printf("Hello, World!");
+   printf("Welcome\n");
    initialize();
+   printf("%ld\n",sizeof(blocks[0].serv));
 }

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "config.h": "c",
+        "rvgs.h": "c",
+        "rngs.h": "c"
+    }
+}
