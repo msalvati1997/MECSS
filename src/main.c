@@ -54,6 +54,24 @@ void enqueue(struct block *block, double arrival) {
 }
 
 
+// Rimuove il job dalla coda del blocco specificata
+void dequeue(struct block *block) {
+    struct job *j = block->head_service;
+
+    if (!j->next)
+        block->tail = NULL;
+
+    block->head_service = j->next;
+
+    if (block->head_queue != NULL && block->head_queue->next != NULL) {
+        struct job *tmp = block->head_queue->next;
+        block->head_queue = tmp;
+    } else {
+        block->head_queue = NULL;
+    }
+    free(j);
+}
+
 
 
 int initialize() {
@@ -136,7 +154,6 @@ int initialize() {
    cloud_unit->loss=NOT_LOSS_SYSTEM;
    cloud_unit->stream=streamID++;
    cloud_unit->block=&blocks[5];
-
 
    clock.arrival = getArrival(clock.current);
 }
