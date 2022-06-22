@@ -1,7 +1,6 @@
 
 all:
-	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c -lm
-
+	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c -lm -w -Wall
 
 
 %:

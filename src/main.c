@@ -99,31 +99,42 @@ int initialize() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
+   printf("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
+   (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
 
    video_unit=calloc(2,sizeof(server*));
+   (*video_unit)=calloc(1,sizeof(server));
    blocks[1].num_servers=2; //video 
 
    wlan_unit=calloc(2,sizeof(server*));
+   (*wlan_unit)=calloc(2,sizeof(server));
    blocks[2].num_servers=2; //wlan 
  
    enode_unit=calloc(1,sizeof(server*));
+   (*enode_unit)=calloc(1,sizeof(server));
    blocks[3].num_servers=1; //enode 
 
    edge_unit=calloc(4,sizeof(server*));
+   (*edge_unit)=calloc(4,sizeof(server));
    blocks[4].num_servers=4; //edge
 
    cloud_unit=calloc(1,sizeof(server*));
+   (*cloud_unit)=calloc(1,sizeof(server));
    blocks[5].num_servers=1; //cloud
 
+   printf("unit starting initialized \n");
+
    (*control_unit)->id=0;
+   printf("1\n");
    (*control_unit)->status=ONLINE;
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
    streamID=streamID++;
    (*control_unit)->block=&blocks[0];
   
+   printf("control_unit initialized\n");
    for(int i=0;i<blocks[1].num_servers;i++) {
        (*video_unit+i)->id=i;
        (*video_unit+i)->status=ONLINE;
@@ -164,19 +175,27 @@ int initialize() {
    (*cloud_unit)->stream=streamID++;
    (*cloud_unit)->block=&blocks[5];
 
-   memcpy(blocks[0].serv, &control_unit, sizeof(server*)*1);
-   memcpy(blocks[1].serv, &control_unit, sizeof(server*)*2);
-   memcpy(blocks[2].serv, &wlan_unit, sizeof(server*)*2);
-   memcpy(blocks[3].serv, &enode_unit, sizeof(server*)*1);
-   memcpy(blocks[4].serv, &edge_unit, sizeof(server*)*4);
-   memcpy(blocks[5].serv, &edge_unit, sizeof(server*)*1);
+   printf("start memcpy\n");
+   blocks[0].serv = calloc(1,sizeof(control_unit));
+   memcpy(blocks[0].serv, &control_unit, sizeof(control_unit));
+   blocks[1].serv = calloc(1,sizeof(video_unit));
+   memcpy(blocks[1].serv, &video_unit, sizeof(video_unit));
+   blocks[2].serv = calloc(1,sizeof(wlan_unit));
+   memcpy(blocks[2].serv, &wlan_unit, sizeof(wlan_unit));
+   blocks[3].serv = calloc(1,sizeof(enode_unit));
+   memcpy(blocks[3].serv, &enode_unit, sizeof(enode_unit));
+   blocks[4].serv = calloc(1,sizeof(edge_unit));
+   memcpy(blocks[4].serv, &edge_unit, sizeof(edge_unit));
+   blocks[5].serv = calloc(1,sizeof(cloud_unit));
+   memcpy(blocks[5].serv, &cloud_unit, sizeof(cloud_unit));
 
    clock.arrival = getArrival(clock.current);
+   printf("finish initialized\n");
 }
  
 
 int main(void) {
    printf("Welcome\n");
    initialize();
-   printf("%ld\n",sizeof(blocks[0].serv));
+  // printf("%ld\n",sizeof(blocks[0].serv));
 }
