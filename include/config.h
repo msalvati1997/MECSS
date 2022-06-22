@@ -6,8 +6,12 @@
 #define INFINITY (100.0 * STOP)
 
 //Input values
-#define WLAN_P 0.11
-#define ARRIVAL_RATE 100.0
+//#define LAMBDA_REMOTE 
+//#define LAMBDA_VIDEO
+
+
+#define WLAN_P 0.3
+#define ARRIVAL_RATE 0.6333
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 0.7831325201
