@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "rngs.h"                      /* the multi-stream generator */
+#include "../include/rngs.h"                      /* the multi-stream generator */
 
 #define START         0.0              /* initial time                   */
 #define STOP      20000.0              /* terminal (close the door) time */

@@ -15,7 +15,7 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "rvms.h"
+#include "../include/rvms.h"
 
 #define LOC 0.95                       /* level of confidence,        */ 
                                        /* use 0.95 for 95% confidence */

@@ -34,8 +34,8 @@
  */
 
 #include <math.h>
-#include "rngs.h"
-#include "rvgs.h"
+#include "../include/rngs.h"
+#include "../include/rvgs.h"
 
 
    long Bernoulli(double p)

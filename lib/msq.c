@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "rngs.h"
+#include "../include/rngs.h"
 
 #define START    0.0                    /* initial (open the door)        */
 #define STOP     20000.0                /* terminal (close the door) time */
