@@ -65,6 +65,14 @@ server enode_unit[1];
 server edge_unit[4];
 server cloud_unit[1]; 
 
+enum block_types {
+    control_unit,
+    video_unit,
+    wlan_unit,
+    enode_unit,
+    cloud_unit,
+};
+
 struct area {
     double node;    /* time integrated number in the node  */
     double queue;   /* time integrated number in the queue */
@@ -83,6 +91,7 @@ struct block {
 
     int batch_block;
     int batch_queue;
+    enum block_types type;
 
     int batch_arrivals;
     int total_arrivals;
