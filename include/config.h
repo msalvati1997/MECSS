@@ -5,21 +5,16 @@
 #define STOP  20000.0 //100.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
-//Input values
-//#define LAMBDA_REMOTE 
-//#define LAMBDA_VIDEO
-
-
-#define WLAN_P 0.3
-#define ARRIVAL_RATE 0.6333
+#define WLAN_P 0.11
+#define ARRIVAL_RATE 60.0
 
 //services time 
-#define CONTROL_UNIT_SERVICE_TIME 0.7831325201
-#define VIDEO_SERVICE_TIME 1.0  //acquisizione di un frame da video service
-#define WLAN_FRAME_UPLOAD_TIME 4.33333333333 //us
-#define ENODE_FRAME_UPLOAD_TIME 13.0
-#define EDGE_PROCESSING_TIME 0.86666666666
-#define CLOUD_PROCESSING_TIME 0.4642857142
+#define CONTROL_UNIT_SERVICE_TIME 0.0113674698
+#define VIDEO_SERVICE_TIME  0.014515384  //acquisizione di un frame da video service
+#define WLAN_FRAME_UPLOAD_TIME  0.0629 
+#define ENODE_FRAME_UPLOAD_TIME 0.1887
+#define EDGE_PROCESSING_TIME 0.0125799999
+#define CLOUD_PROCESSING_TIME 0.0673928571
 
 
 //delay
