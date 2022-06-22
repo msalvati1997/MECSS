@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <stdio.h>          // Needed for printf()
+#include <stdlib.h>  
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 double getArrival(double current) {
     double arrival = current;
@@ -193,6 +194,21 @@ int initialize() {
    printf("%f\n",clock.arrival);
    printf("finish initialized\n");
 }
+
+//===========================================================================
+//=  Recursive function to solve for Erlang-B blocking probability          =
+//=   - Input is c = number of servers and a = total offered load           =
+//=   - Output returned is Erlang-B blocking probability                    =
+//===========================================================================
+double E(int c, double a)
+{
+  double     e_last;        // Last E() value
+
+  if (c == 0)
+    return(1.0);
+  else
+    return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
+}
  
 
 int main(void) {
@@ -208,5 +224,16 @@ int main(void) {
    enqueue(&blocks[0],2305345.0);
    double arrival =blocks[0].head_queue->arrival;
    printf("job in queueu %f\n",arrival);
+     // Compute Erlang-B blocking probability using recursive function E()
+
+   double     a;             // Total offered load
+   double     rho;           // Utilization per server
+   double     prob_block;    // Erlang-B blocking probability
+   int        num_servers;
+   a = ARRIVAL_RATE / VIDEO_SERVICE_TIME;
+   num_servers=2.0;
+   prob_block = E(2, 0.67);
+   printf("= Pr[block] (Erlang-B) = %f \n", prob_block);
+  
 
 }

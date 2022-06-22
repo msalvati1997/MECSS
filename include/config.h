@@ -11,7 +11,7 @@
 
 
 #define WLAN_P 0.3
-#define ARRIVAL_RATE 100.0
+#define ARRIVAL_RATE 0.6333
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 0.7831325201
