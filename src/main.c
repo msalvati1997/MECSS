@@ -2,7 +2,6 @@
 #include "../include/rngs.h"
 #include "../include/rvgs.h"
 #include "../include/rvms.h"
-#include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,6 +34,7 @@ double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1 / ARRIVAL_RATE);
+    printf("print arrival %f\n",arrival);
     return arrival;
 }
 
@@ -87,23 +87,24 @@ void enqueue(block *block, double arrival, int type) {
 
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
-int dequeue(block *block) {
+int dequeue(block *block_t) {
     printf("dequeue\n");
-    job *j = block->head_service;
-    printf("arrival %d\n",j->arrival);
+    job *j = malloc(sizeof(job));
+    j = &(block_t->head_service);
+    printf("arrival %f\n",j->arrival);
     int type; 
     type=0;
     type = j->type;
     printf("type: %d\n",j->type);
     if (!j->next)
-        block->tail = NULL;
-    block->head_service = j->next;
+        block_t->tail = NULL;
+    block_t->head_service = j->next;
 
-    if (block->head_queue != NULL && block->head_queue->next != NULL) {
-        job *tmp = block->head_queue->next;
-        block->head_queue = tmp;
+    if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
+        job *tmp = block_t->head_queue->next;
+        block_t->head_queue = tmp;
     } else {
-        block->head_queue = NULL;
+        block_t->head_queue = NULL;
     }
     free(j);
     return type;
@@ -111,7 +112,7 @@ int dequeue(block *block) {
 
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
-    printf("find free server\n");
+    printf("find free server\n\n");
     for (int i = 0; i < b->num_servers; i++) {
         if(((*(b->serv)+i)->status)==IDLE){
             return *(b->serv)+i;
@@ -122,12 +123,12 @@ server *findFreeServer(block *b) {
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
-    printf("process arrival 2 \n");
+    printf("process arrival\n");
+    printf("\n\n\n\n\n\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
     server *s = findFreeServer(&blocks[0]);
-
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
         printf("free server\n");
@@ -141,6 +142,7 @@ void process_arrival() {
         insertSorted(&global_sorted_completions, c);
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
+        printf("not free\n");
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
         blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
@@ -149,7 +151,7 @@ void process_arrival() {
 
 // Processa un next-event di completamento
 void process_completion(compl c) {
-    printf("process completion 1 \n");
+    printf("process completion \n");
     block *block_ = (c.server)->block;
     int block_type = (block_)->type;
     blocks[block_type].total_completions++;
@@ -159,7 +161,9 @@ void process_completion(compl c) {
     server *freeServer;
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
+    printf("before delete\n");
     deleteElement(&global_sorted_completions, c);
+    printf("after delete\n");
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         blocks[block_type].jobInQueue--;
@@ -374,7 +378,10 @@ void finite_horizon_run(int stop_time, int repetition) {
     while (clock.arrival <= stop_time) {
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
-        clock.next = min(nextCompletion->value, clock.arrival);  // Ottengo il prossimo evento
+        printf("nextCompetion value %f\n",nextCompletion->value);
+        printf("clock arrival value %f\n",clock.arrival);
+        clock.next = my_min(nextCompletion->value, clock.arrival);  // Ottengo il prossimo evento
+        printf("clock next %f\n", clock.next);
         printf("get next event \n");
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
@@ -383,12 +390,14 @@ void finite_horizon_run(int stop_time, int repetition) {
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
+        printf("clock current %f\n", clock.current);
+        printf("clock arrival %f\n", clock.arrival);
 
         if (clock.current == clock.arrival) {
-            printf("process arrival\n");
+            printf("process arrival finite horizon\n");
             process_arrival();
         } else {
-            printf("process arrival\n");
+            printf("process completion finite horizon \n");
             process_completion(*nextCompletion);
         }
         if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {
@@ -437,7 +446,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = min(m * mu, lambda_i);
+        double throughput = my_min(m * mu, lambda_i);
         if (i == CLOUD_UNIT) {
             throughput = lambda_i;
         }
@@ -467,7 +476,7 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = min(m * mu, lambda_i);
+        double throughput = my_min(m * mu, lambda_i);
         if (i == CLOUD_UNIT) {
             throughput = lambda_i;
         }
@@ -517,6 +526,7 @@ int initialize() {
    printf("initialize\n");
    streamID=0;
    clock.current = START;
+   printf("clock current initialize %f\n", clock.current);
    completed = 0;
    bypassed=0;
 

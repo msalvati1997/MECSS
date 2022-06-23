@@ -22,7 +22,7 @@ double E(int c, double a)
 }
 
 // Ritorna il minimo tra due valori
-double min(double x, double y) {
+double my_min(double x, double y) {
     return (x < y) ? x : y;
 }
 // Apre un csv in modalità append
