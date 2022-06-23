@@ -27,7 +27,11 @@
 #define IDLE 3
 #define LOSS_SYSTEM 4
 #define NOT_LOSS_SYSTEM 5
+#define EXTERNAL 6  //arrivo esterno
+#define INTERNAL 7 //arrivo interno 
 #define EXIT 32
+#define P_WLAN 0.6
+#define P_OFF_WLAN 0.11
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
 #define BATCH_B 1024
@@ -66,7 +70,7 @@ struct sum_t {
 struct job_t {
     double arrival;
     job *next;
-    int type; //local or remote
+    int type; // {LOCAL;INTERNAL}
 };
 
 enum block_types {
@@ -138,6 +142,12 @@ typedef struct {
     int num_completions;
 } sorted_completions;
 
+
+// Struttura che mantiene la lista ordinata di tutti i completamenti
+typedef struct {
+    compl sorted_list[11];
+    int num_completions;
+} sorted_completions;
 
 block blocks[NUM_BLOCKS];
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
