@@ -137,11 +137,6 @@ struct complement_t {
     double value; //tempo di completamento
 };
 
-typedef struct {
-    compl sorted_list[11];
-    int num_completions;
-} sorted_completions;
-
 
 // Struttura che mantiene la lista ordinata di tutti i completamenti
 typedef struct {
