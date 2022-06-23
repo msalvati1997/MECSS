@@ -232,13 +232,54 @@ int intermittent_wlan() {
 
 
 // Inserisce un elemento nella lista ordinata
-int insertSorted() {
-  
+int insertSorted(sorted_completions *compls, compl completion) {
+    int i;
+    int n = compls->num_completions;
+
+    for (i = n - 1; (i >= 0 && (compls->sorted_list[i].value > completion.value)); i--) {
+        compls->sorted_list[i + 1] = compls->sorted_list[i];
+    }
+    compls->sorted_list[i + 1] = completion;
+    compls->num_completions++;
+
+    return (n + 1);
 }
 
-// Elimina un elemento dalla lista ordinata
-int deleteElement() {
+// Ricerca binaria di un elemento su una lista ordinata
+int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
+    if (high < low) {
+        return -1;
+    }
+    int mid = (low + high) / 2;
+    if (completion.value == compls->sorted_list[mid].value) {
+        return mid;
+    }
+    if (completion.value == compls->sorted_list[mid].value) {
+        return binarySearch(compls, (mid + 1), high, completion);
+    }
+    return binarySearch(compls, low, (mid - 1), completion);
+}
 
+// Function to delete an element
+int deleteElement(sorted_completions *compls, compl completion) {
+    int i;
+    int n = compls->num_completions;
+
+    int pos = binarySearch(compls, 0, n - 1, completion);
+
+    if (pos == -1) {
+        printf("Element not found");
+        return n;
+    }
+
+    // Deleting element
+    for (i = pos; i < n; i++) {
+        compls->sorted_list[i] = compls->sorted_list[i + 1];
+    }
+    compls->sorted_list[n - 1].value = INFINITY;
+    compls->num_completions--;
+
+    return n - 1;
 }
 
 //Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)

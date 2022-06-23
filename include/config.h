@@ -130,8 +130,14 @@ server **cloud_unit;
 // Struttura che mantiene un completamento su un server
 struct complement_t {
     server *server;
-    double value;
-} ;
+    double value; //tempo di completamento
+};
+
+typedef struct {
+    compl sorted_list[11];
+    int num_completions;
+} sorted_completions;
+
 
 block blocks[NUM_BLOCKS];
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
