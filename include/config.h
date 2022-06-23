@@ -56,8 +56,9 @@ typedef struct server_t server;
 typedef struct block_t block;
 typedef struct complement_t compl;
 typedef struct job_t job;
-
-
+typedef struct sorted_completions_t sorted_completions;
+static const sorted_completions empty_sorted;
+double statistics[NUM_REPETITIONS];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //data structure
 //Struttura che mantiene il clock
@@ -113,6 +114,8 @@ struct block_t {
     int batch_arrivals;
     int total_arrivals;
     int total_completions;
+    int total_bypassed;
+    int total_dropped;
     double service_rate;
     struct area_t area;
 
@@ -146,18 +149,17 @@ struct complement_t {
 };
 
 // Struttura che mantiene la lista ordinata di tutti i completamenti
-typedef struct {
+struct sorted_completions_t{
     compl sorted_list[11];
     int num_completions;
-} sorted_completions;
+} ;
 
 
 sorted_completions global_sorted_completions;  // Tiene in una lista ordinata tutti i completamenti nella rete così da ottenere il prossimo in O(log(N))
 block blocks[NUM_BLOCKS];
-struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
 int completed;
 int bypassed;
-
+int dropped;
 // --------------------------------------------------------------------------------------------------
 
 

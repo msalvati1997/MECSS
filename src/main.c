@@ -27,8 +27,10 @@ COSE DA FARE:
 - aggiungere funzione calcolo dispendio energetico 
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
+struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
 
 double getArrival(double current) {
+    printf("get arrival\n");
 
     double arrival = current;
     SelectStream(254);
@@ -39,6 +41,7 @@ double getArrival(double current) {
 // Genera un tempo di servizio esponenziale di media specificata e stream del servente individuato
 double getService(int type_service, int stream) {
     SelectStream(stream);
+    printf("get service\n");
 
     switch (type_service) {
         case 0:
@@ -60,6 +63,8 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
+    printf("enqueue\n");
+    printf("type %d\n",type);
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -83,12 +88,15 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block) {
+    printf("dequeue\n");
     job *j = block->head_service;
+    printf("arrival %d\n",j->arrival);
     int type; 
+    type=0;
     type = j->type;
+    printf("type: %d\n",j->type);
     if (!j->next)
         block->tail = NULL;
-
     block->head_service = j->next;
 
     if (block->head_queue != NULL && block->head_queue->next != NULL) {
@@ -103,6 +111,7 @@ int dequeue(block *block) {
 
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
+    printf("find free server\n");
     for (int i = 0; i < b->num_servers; i++) {
         if(((*(b->serv)+i)->status)==IDLE){
             return *(b->serv)+i;
@@ -113,6 +122,7 @@ server *findFreeServer(block *b) {
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
+    printf("process arrival 2 \n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
@@ -120,6 +130,7 @@ void process_arrival() {
 
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
+        printf("free server\n");
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         compl c = {s, INFINITY};
         c.value = clock.current + serviceTime;
@@ -138,7 +149,9 @@ void process_arrival() {
 
 // Processa un next-event di completamento
 void process_completion(compl c) {
-    int block_type = c.server->block->type;
+    printf("process completion 1 \n");
+    block *block_ = (c.server)->block;
+    int block_type = (block_)->type;
     blocks[block_type].total_completions++;
     blocks[block_type].jobInBlock--;
     int type;
@@ -172,17 +185,17 @@ void process_completion(compl c) {
         return;
     }
 
-    if(c.server->online= OFFLINE && block_type == WLAN_UNIT) {
-        return;
-    }
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     if (destination == EXIT) {
-        bypassed++;
+        blocks[block_type].total_dropped++;
+        dropped++;
         return;
     }
-    if (destination == CLOUD_UNIT) {
+    if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
             server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
+            blocks[destination].jobInBlock++;
+            enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
             c2.value = clock.current + service_2;
@@ -190,8 +203,9 @@ void process_completion(compl c) {
             cloud_server->sum.served++;
             cloud_server->block->area.service += service_2;
             completed++;
+            return;
     }
-    if (destination != CLOUD_UNIT) {
+    if (destination != CLOUD_UNIT & destination != VIDEO_UNIT) {
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
         enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
@@ -200,6 +214,7 @@ void process_completion(compl c) {
         freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
             compl c2 = {freeServer, INFINITY};
+             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
@@ -213,10 +228,35 @@ void process_completion(compl c) {
             return;
         }
     }
+    //video unit - a perdita 
+    if (destination==VIDEO_UNIT)  {
+         blocks[destination].total_arrivals++;
+         freeServer = findFreeServer(&blocks[destination]);
+         if (freeServer != NULL) {
+          blocks[destination].jobInBlock++;
+          enqueue(&blocks[destination], c.value,INTERNAL);
+          compl c3 = {freeServer, INFINITY};
+          double service_3 = getService(destination, freeServer->stream);
+          c3.value = clock.current + service_3;
+          insertSorted(&global_sorted_completions, c3);
+          freeServer->status = BUSY;
+          freeServer->sum.service += service_3;
+          freeServer->sum.served++;
+          freeServer->block->area.service += service_3;
+          return;
+
+    } else { //LOSS
+        completed++;
+        bypassed++;
+        blocks[destination].total_bypassed++;
+        return;
+    }
+    }
 }
 
 // Ritorna il blocco destinazione di un job dopo il suo completamento
 int getDestination(enum block_types from, int type) {
+    printf("getdestination\n");
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
@@ -226,13 +266,13 @@ int getDestination(enum block_types from, int type) {
                 return routing_from_control_unit();
             }
         case VIDEO_UNIT:
-            return CONTROL_UNIT;
+             return CONTROL_UNIT;
         case WLAN_UNIT:
-            return EDGE_UNIT;
+             return EDGE_UNIT;
         case ENODE_UNIT:
-            return EDGE_UNIT;
+             return EDGE_UNIT;
         case EDGE_UNIT:
-            return CLOUD_UNIT;
+             return CLOUD_UNIT;
         case CLOUD_UNIT:
              return EXIT;
              break;
@@ -242,6 +282,7 @@ int getDestination(enum block_types from, int type) {
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
 int routing_from_control_unit() {
+    printf("routing control unit\n");
 
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
            return ENODE_UNIT; 
@@ -258,6 +299,7 @@ int routing_from_control_unit() {
 
 //Thread che disattiva la WLAN essendo un server intermittente 
 int intermittent_wlan() {
+    printf("intermittent wlan\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
         (*wlan_unit)->need_resched=true;
@@ -273,6 +315,7 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
+    printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -287,6 +330,7 @@ int insertSorted(sorted_completions *compls, compl completion) {
 
 // Ricerca binaria di un elemento su una lista ordinata
 int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
+    printf("binary search\n");
     if (high < low) {
         return -1;
     }
@@ -302,13 +346,14 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
 
 // Function to delete an element
 int deleteElement(sorted_completions *compls, compl completion) {
+    printf("delete element\n");
     int i;
     int n = compls->num_completions;
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
     if (pos == -1) {
-        printf("Element not found");
+        printf("Element not found\n");
         return n;
     }
 
@@ -324,12 +369,13 @@ int deleteElement(sorted_completions *compls, compl completion) {
 
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
+    printf("finite horizon run\n");
     int n = 1;
     while (clock.arrival <= stop_time) {
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
         clock.next = min(nextCompletion->value, clock.arrival);  // Ottengo il prossimo evento
-
+        printf("get next event \n");
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
@@ -339,18 +385,127 @@ void finite_horizon_run(int stop_time, int repetition) {
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
 
         if (clock.current == clock.arrival) {
+            printf("process arrival\n");
             process_arrival();
         } else {
+            printf("process arrival\n");
             process_completion(*nextCompletion);
         }
         if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {
-            //calculate statistic 
+            calculate_statistics_clock(blocks, clock.current);
             n++;
         }
     }
     //calculate statistic finali
+   calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
 }
+
+// Esegue le ripetizioni di singole run a orizzonte finito
+void finite_horizon_simulation(int stop_time, int repetitions) {
+    printf("finite horizon simulation\n");
+    printf("\n\n==== Finite Horizon Simulation | sim_time %d | #repetitions #%d ====", STOP, NUM_REPETITIONS);
+    printf("\n\n");
+    for (int r = 0; r < repetitions; r++) {
+        finite_horizon_run(stop_time, r);
+        clear_environment();
+    }
+    printf("write to csv\n");
+    write_rt_csv_finite();
+}
+
+// Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
+void calculate_statistics_clock(block blocks[], double currentClock) {
+    printf("calculate staticts clock\n");
+    char filename[100];
+    snprintf(filename, 100, "results/finite/continuos_finite.csv");
+    FILE *csv;
+    csv = open_csv_appendMode(filename);
+
+    double visit_rt = 0;
+    double m = 0.0;
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+        int arr = blocks[i].total_arrivals;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = min(m * mu, lambda_i);
+        if (i == CLOUD_UNIT) {
+            throughput = lambda_i;
+        }
+        double visit = throughput / external_arrival_rate;
+        visit_rt += wait * visit;
+    }
+    append_on_csv_v2(csv, visit_rt, currentClock);
+    fclose(csv);
+}
+
+// Calcola le statistiche specificate
+void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS], int rep) {
+    printf("calculate_statistics_fin\n");
+    double visit_rt = 0;
+    double m = 0.0;
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+      
+        int arr = blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / blocks[i].total_arrivals;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = min(m * mu, lambda_i);
+        if (i == CLOUD_UNIT) {
+            throughput = lambda_i;
+        }
+        double visit = throughput / external_arrival_rate;
+        visit_rt += wait * visit;
+
+        double utilization = lambda_i / (m * mu);
+    }
+    rt_arr[rep] = visit_rt;
+}
+
+// Resetta l'ambiente di esecuzione tra due run ad orizzonte finito
+void clear_environment() {
+    printf("clear environment\n");
+    global_sorted_completions = empty_sorted;
+    for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
+        blocks[block_type].area.node = 0;
+        blocks[block_type].area.service = 0;
+        blocks[block_type].area.queue = 0;
+    }
+}
+
+
+// Resetta le statistiche tra un batch ed il successivo
+void reset_statistics() {
+    printf("reset_statistics\n");
+    clock.batch_current = clock.current;
+    for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
+        blocks[block_type].total_arrivals = 0;
+        blocks[block_type].total_completions = 0;
+        blocks[block_type].total_bypassed = 0;
+        blocks[block_type].area.node = 0;
+        blocks[block_type].area.service = 0;
+        blocks[block_type].area.queue = 0;
+    }
+}
+
+
 
 //Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)
 int calculate_energy_consumption() {
@@ -359,6 +514,7 @@ int calculate_energy_consumption() {
 
 
 int initialize() {
+   printf("initialize\n");
    streamID=0;
    clock.current = START;
    completed = 0;
@@ -370,6 +526,7 @@ int initialize() {
         blocks[block_type].jobInQueue = 0;
         blocks[block_type].total_arrivals = 0;
         blocks[block_type].total_completions = 0;
+        blocks[block_type].total_bypassed = 0;
         blocks[block_type].area.node = 0;
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
@@ -482,19 +639,19 @@ int initialize() {
 
 
 int main(void) {
-   printf("Welcome\n");
-   initialize();
-   printf("%ld\n",blocks[0].num_servers);
-   printf("%ld\n",blocks[1].num_servers);
-   printf("%ld\n",blocks[2].num_servers);
-   printf("%ld\n",blocks[3].num_servers);
-   printf("%ld\n",blocks[4].num_servers);
-   printf("%ld\n",blocks[5].num_servers);
-
-   double     prob_block;    // Erlang-B blocking probability
-  
-   prob_block = E(2, 0.67);
-   printf("= Pr[block] (Erlang-B) = %f \n", prob_block);
-  
-
+    PlantSeeds(231232132);
+    initialize() ;
+    finite_horizon_simulation(STOP, NUM_REPETITIONS);
 }
+
+
+// Scrive i tempi di risposta a tempo finito su un file csv
+void write_rt_csv_finite() {
+    FILE *csv;
+    char filename[100];
+    csv = open_csv(filename);
+    for (int i = 0; i < NUM_REPETITIONS; i++) {
+            append_on_csv(csv, i, statistics[i]);
+        }
+        fclose(csv);
+ }
