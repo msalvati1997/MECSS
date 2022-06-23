@@ -16,6 +16,30 @@ int fattoriale(int n){
     return fatt;
 }
 
+double util_mm1(double lambda, double mu){
+    return lambda/mu;
+}
+
+double util_mmk(double lambda, double mu, int k){
+    return lambda/(k*mu);
+}
+
+double util_mmkk(double lambda, double mu, int k){
+    double Ploss = 0.0;
+    double den = 0.0;
+    double num = pow(lambda/mu, k)/fattoriale(k);
+
+    for(int i= 0; i<(k+1); i++){
+        den += pow(lambda/mu, i)/fattoriale(i);
+    }
+
+    Ploss = num/den;
+
+    printf("PLoss: %f\n", Ploss);
+    
+    return (lambda*(1.0-Ploss))/(k*mu);
+}
+
 //funzione t risposta M/M/1
 double rtime_mm1(double lambda, double mu){
     double Etq;
@@ -58,9 +82,56 @@ double rtime_mmk(double lambda, double mu, double k){
     return etq +(1.0/(mu));
 }
 
+void add_stats(){
+
+//blocco control unit
+statistics[0][0] = rtime_mm1(ARRIVAL_RATE,1.0/CONTROL_UNIT_SERVICE_TIME);
+statistics[0][1] = util_mm1(ARRIVAL_RATE,1.0/CONTROL_UNIT_SERVICE_TIME);
+
+//blocco video
+statistics[1][0] = rtime_mmkk(1.0/VIDEO_SERVICE_TIME);
+statistics[1][1] = util_mmkk(TH_VIDEO,1.0/CONTROL_UNIT_SERVICE_TIME,2);
+
+//blocco wifi
+statistics[2][0] = rtime_mmk(TH_WLAN,1.0/WLAN_FRAME_UPLOAD_TIME,2);
+statistics[2][1] = util_mmk(TH_WLAN,1.0/WLAN_FRAME_UPLOAD_TIME,2);
+
+//blocco rete cellulare
+statistics[3][0] = rtime_mm1(TH_ENODE,1.0/ENODE_FRAME_UPLOAD_TIME);
+statistics[3][1] = util_mm1(TH_ENODE,1.0/ENODE_FRAME_UPLOAD_TIME);
+
+//blocco edge
+statistics[4][0] = rtime_mmk(TH_EDGE,1.0/EDGE_PROCESSING_TIME,4);
+statistics[4][1] = util_mmk(TH_EDGE,1.0/EDGE_PROCESSING_TIME,4);
+
+//blocco cloud (utilizzazione tende a 0 al crescere di k serventi)
+statistics[5][0] = rtime_mmkk(1.0/WLAN_FRAME_UPLOAD_TIME);
+statistics[5][1] = 0;
+
+}
+
+void print_stats(){
+
+    printf("Tempo risp control unit: %f\n", statistics[0][0]);
+    printf("Tempo risp video unit: %f\n", statistics[1][0]);
+    printf("Tempo risp wlan unit: %f\n", statistics[2][0]);
+    printf("Tempo risp enode unit: %f\n", statistics[3][0]);
+    printf("Tempo risp edge unit: %f\n", statistics[4][0]);
+    printf("Tempo risp cloud unit: %f\n", statistics[5][0]);
+
+    printf("Utilizzazione control unit: %f\n", statistics[0][1]);
+    printf("Utilizzazione video unit: %f\n", statistics[1][1]);
+    printf("Utilizzazione wlan unit: %f\n", statistics[2][1]);
+    printf("Utilizzazione enode unit: %f\n", statistics[3][1]);
+    printf("Utilizzazione edge unit: %f\n", statistics[4][1]);
+    printf("Utilizzazione cloud unit: %f\n", statistics[5][1]);
+
+}
+
 
 int main(int argc, char** argv){
-    printf("mmk = %f\n", rtime_mmk(4.0,1.5,4.0));
+    add_stats();
+    print_stats();
     return 0;
 }
 
