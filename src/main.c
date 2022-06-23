@@ -371,6 +371,10 @@ int deleteElement(sorted_completions *compls, compl completion) {
     return n - 1;
 }
 
+// Ritorna il minimo tra due valori
+double my_min(double x, double y) {
+    return (x < y) ? x : y;
+}
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
     printf("finite horizon run\n");
@@ -380,7 +384,7 @@ void finite_horizon_run(int stop_time, int repetition) {
         server *nextCompletionServer = nextCompletion->server;
         printf("nextCompetion value %f\n",nextCompletion->value);
         printf("clock arrival value %f\n",clock.arrival);
-        clock.next = my_min(nextCompletion->value, clock.arrival);  // Ottengo il prossimo evento
+        clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
         printf("clock next %f\n", clock.next);
         printf("get next event \n");
         for (int i = 0; i < NUM_BLOCKS; i++) {
@@ -665,3 +669,4 @@ void write_rt_csv_finite() {
         }
         fclose(csv);
  }
+

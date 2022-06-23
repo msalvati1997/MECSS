@@ -21,10 +21,7 @@ double E(int c, double a)
     return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
 }
 
-// Ritorna il minimo tra due valori
-double my_min(double x, double y) {
-    return (x < y) ? x : y;
-}
+
 // Apre un csv in modalità append
 FILE *open_csv_appendMode(char *filename) {
     FILE *fpt;
