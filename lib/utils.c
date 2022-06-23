@@ -41,10 +41,6 @@ void *append_on_csv_v2(FILE *fpt, double ts, double p) {
     return fpt;
 }
 // Apre un file csv e ritorna il puntatore a quel file
-FILE *open_csv(char *filename) {
-    FILE *fpt;
-    fpt = fopen(filename, "w+");
-    return fpt;
-}
+
 
 

@@ -28,6 +28,12 @@ COSE DA FARE:
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
 
+FILE *open_csv(char *filename) {
+    FILE *fpt;
+    fpt = fopen(filename, "w+");
+    return fpt;
+}
+
 double getArrival(double current) {
     printf("get arrival\n");
 
@@ -662,11 +668,15 @@ int main(void) {
 // Scrive i tempi di risposta a tempo finito su un file csv
 void write_rt_csv_finite() {
     FILE *csv;
-    char filename[100];
+    char* filename = "results.csv";
     csv = open_csv(filename);
-    for (int i = 0; i < NUM_REPETITIONS; i++) {
+    if(csv != NULL){
+        printf("file exist!\n");
+        for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, i, statistics[i]);
         }
         fclose(csv);
+    }
+    
  }
 
