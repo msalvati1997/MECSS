@@ -344,17 +344,18 @@ void finite_horizon_run(int stop_time, int repetition) {
             process_completion(*nextCompletion);
         }
         if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {
-
+            //calculate statistic 
             n++;
         }
     }
+    //calculate statistic finali
+    //calcolo bilanciamento energetico 
 }
 
 //Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)
 int calculate_energy_consumption() {
 
 }
-
 
 
 int initialize() {
