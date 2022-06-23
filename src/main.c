@@ -2,6 +2,7 @@
 #include "../include/rngs.h"
 #include "../include/rvgs.h"
 #include "../include/rvms.h"
+#include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
