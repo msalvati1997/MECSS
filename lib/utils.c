@@ -1,3 +1,11 @@
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 //===========================================================================
 //=  Recursive function to solve for Erlang-B blocking probability          =
 //=   - Input is c = number of servers and a = total offered load           =
@@ -17,3 +25,29 @@ double E(int c, double a)
 double min(double x, double y) {
     return (x < y) ? x : y;
 }
+// Apre un csv in modalità append
+FILE *open_csv_appendMode(char *filename) {
+    FILE *fpt;
+    fpt = fopen(filename, "a");
+    return fpt;
+}
+
+// Inserisce una nuova linea nel file csv specificato
+void *append_on_csv(FILE *fpt, double ts, double p) {
+    fprintf(fpt, "%2.6f\n", ts);
+    return fpt;
+}
+
+// Inserisce una nuova linea nel file csv specificato
+void *append_on_csv_v2(FILE *fpt, double ts, double p) {
+    fprintf(fpt, "%2.6f; %2.6f\n", ts, p);
+    return fpt;
+}
+// Apre un file csv e ritorna il puntatore a quel file
+FILE *open_csv(char *filename) {
+    FILE *fpt;
+    fpt = fopen(filename, "w+");
+    return fpt;
+}
+
+

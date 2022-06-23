@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
-double statistics[NUM_BLOCKS][NUM_METRICS];
+double analytics_statistics[NUM_BLOCKS][NUM_METRICS];
 
 int fattoriale(int n){
     int fatt=1;
@@ -65,3 +65,10 @@ int main(int argc, char** argv){
 }
 
 
+void calculate_statistic() {
+
+    for(int i=0;i<NUM_BLOCKS;i++) {
+        
+
+    }
+}
