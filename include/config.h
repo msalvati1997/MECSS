@@ -3,7 +3,7 @@
 #define NUM_BLOCKS 6
 #define NUM_METRICS 2
 #define START 0.0
-#define STOP  20000.0 //100.0 * 24.0 * 60.0 * 60.0
+#define STOP  20000000.0//100.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
 #define WLAN_P 0.11
@@ -127,7 +127,7 @@ struct server_t {
     int id;
     int stream;
     int online; //{ONLINE=0,OFFLINE=1}
-    int status; //{BUSY=0,IDLE=1}
+    int status; //{BUSY=2,IDLE=3}
     block *block;
     struct sum_t sum;
     bool need_resched;

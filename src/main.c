@@ -40,7 +40,6 @@ double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1 / ARRIVAL_RATE);
-    printf("print arrival %f\n",arrival);
     return arrival;
 }
 
@@ -69,7 +68,7 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-    printf("enqueue\n");
+  //  printf("enqueue\n");
     printf("type %d\n",type);
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
@@ -119,9 +118,11 @@ int dequeue(block *block_t) {
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
     printf("find free server\n\n");
+    int num = b->num_servers;
+    server *serv = &(b->serv);
     for (int i = 0; i < b->num_servers; i++) {
-        if(((*(b->serv)+i)->status)==IDLE){
-            return *(b->serv)+i;
+        if((serv+i)->status==IDLE){
+            return (serv+i);
         }
     }
     return NULL;
@@ -130,7 +131,6 @@ server *findFreeServer(block *b) {
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
     printf("process arrival\n");
-    printf("\n\n\n\n\n\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
@@ -139,13 +139,22 @@ void process_arrival() {
     if (s != NULL) {
         printf("free server\n");
         double serviceTime = getService(CONTROL_UNIT, s->stream);
-        compl c = {s, INFINITY};
-        c.value = clock.current + serviceTime;
+        printf("after get service\n");
+        compl *c = malloc(sizeof(compl));
+        c->server=s;
+        c->value = clock.current + serviceTime;
+        printf("printf status %d\n", s->status);
         s->status = BUSY;  // Setto stato busy
+        printf("2 \n");
         s->sum.service += serviceTime;
+        printf("3 service time %f\n",s->sum.service);
+        block *block_s = s->block;
+        printf("num %ld\n", (block_s->num_servers));
         s->block->area.service += serviceTime;
+        printf("4\n");
         s->sum.served++;
-        insertSorted(&global_sorted_completions, c);
+        printf("before insert sorted\n");
+        insertSorted(&global_sorted_completions, *c);
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
         printf("not free\n");
@@ -167,9 +176,7 @@ void process_completion(compl c) {
     server *freeServer;
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    printf("before delete\n");
     deleteElement(&global_sorted_completions, c);
-    printf("after delete\n");
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         blocks[block_type].jobInQueue--;
@@ -325,7 +332,7 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
-    printf("insert sorted\n");
+   // printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -388,11 +395,9 @@ void finite_horizon_run(int stop_time, int repetition) {
     while (clock.arrival <= stop_time) {
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
-        printf("nextCompetion value %f\n",nextCompletion->value);
-        printf("clock arrival value %f\n",clock.arrival);
+     
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-        printf("clock next %f\n", clock.next);
-        printf("get next event \n");
+        printf("nextCompletion value : %f\n", nextCompletion->value);
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
@@ -400,11 +405,10 @@ void finite_horizon_run(int stop_time, int repetition) {
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
-        printf("clock current %f\n", clock.current);
-        printf("clock arrival %f\n", clock.arrival);
+      
 
         if (clock.current == clock.arrival) {
-            printf("process arrival finite horizon\n");
+            printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
             process_arrival();
         } else {
             printf("process completion finite horizon \n");
@@ -418,6 +422,7 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calculate statistic finali
    calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
+   printf("fine\n");
 }
 
 // Esegue le ripetizioni di singole run a orizzonte finito
@@ -436,8 +441,10 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 // Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
     printf("calculate staticts clock\n");
+    printf("---------------------------------------------------------------\n");
+
     char filename[100];
-    snprintf(filename, 100, "results/finite/continuos_finite.csv");
+    snprintf(filename, 100, "continuos_finite.csv");
     FILE *csv;
     csv = open_csv_appendMode(filename);
 
@@ -540,6 +547,7 @@ int initialize() {
    completed = 0;
    bypassed=0;
 
+
     for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
         blocks[block_type].type = block_type;
         blocks[block_type].jobInBlock = 0;
@@ -580,12 +588,12 @@ int initialize() {
    printf("unit starting initialized \n");
 
    (*control_unit)->id=0;
-   printf("1\n");
    (*control_unit)->status=IDLE;
    (*control_unit)->online=ONLINE;
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
    streamID=streamID++;
+   (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
   
    printf("control_unit initialized\n");
@@ -595,6 +603,7 @@ int initialize() {
        (*video_unit+i)->online=ONLINE;
        (*video_unit+i)->loss=LOSS_SYSTEM;
        (*video_unit+i)->stream=streamID++;
+       (*video_unit+i)->block=malloc(sizeof(block));
        (*video_unit+i)->block=&blocks[1];  
        insertSorted(&global_sorted_completions, (compl){(*video_unit+i), INFINITY});
        streamID=streamID++;
@@ -606,6 +615,7 @@ int initialize() {
          (*wlan_unit+i)->online=ONLINE;
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
          (*wlan_unit+i)->stream=streamID++;
+         (*wlan_unit+i)->block=malloc(sizeof(block));
          (*wlan_unit+i)->block=&blocks[2];
          insertSorted(&global_sorted_completions, (compl){(*wlan_unit+i), INFINITY});
          streamID=streamID++;
@@ -616,6 +626,7 @@ int initialize() {
    (*enode_unit)->online=ONLINE;
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
    (*enode_unit)->stream=streamID++;
+   (*enode_unit)->block=malloc(sizeof(block));
    (*enode_unit)->block=&blocks[3];
     insertSorted(&global_sorted_completions, (compl){(*enode_unit), INFINITY});
    streamID=streamID++;
@@ -626,6 +637,7 @@ int initialize() {
           (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
+          (*edge_unit+i)->block=malloc(sizeof(block));
           (*edge_unit+i)->block=&blocks[4];
           insertSorted(&global_sorted_completions, (compl){(*edge_unit), INFINITY});
           streamID=streamID++;
@@ -637,6 +649,7 @@ int initialize() {
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
    insertSorted(&global_sorted_completions, (compl){(*cloud_unit), INFINITY});
+   (*cloud_unit)->block=malloc(sizeof(block));
    (*cloud_unit)->block=&blocks[5];
 
    blocks[0].serv = calloc(1,sizeof(control_unit));
@@ -651,7 +664,6 @@ int initialize() {
    memcpy(blocks[4].serv, &edge_unit, sizeof(edge_unit));
    blocks[5].serv = calloc(1,sizeof(cloud_unit));
    memcpy(blocks[5].serv, &cloud_unit, sizeof(cloud_unit));
-
    clock.arrival = getArrival(clock.current);
    printf("%f\n",clock.arrival);
    printf("finish initialized\n");
