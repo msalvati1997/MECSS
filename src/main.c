@@ -11,17 +11,18 @@
 
 /*@todo 
 COSE DA FARE:
-- decidere i tipi di job e implementare logica se diversi 
-- implemetnare insertSorted  
-- implementare funzione delete element dalla lista sortata 
-- implementare get destination  (ritorna blocco) 
-- funzione di routing from control unit to cloud  
-- funzione di intermittenza WLAN (thread separato)
+- decidere i tipi di job e implementare logica se diversi  (fatto)
+- implemetnare insertSorted  (simo)
+- implementare funzione delete element dalla lista sortata (simo)
+- implementare get destination  (ritorna blocco)  (marti)
+- funzione di routing from control unit to cloud   (marti)
+- funzione di intermittenza WLAN (thread separato) -> {need_resched,offline/online}
+/////////////////////////////////////////////////////////////////////
 - funzione resetta variabili 
 - aggiungere statistiche da fare 
 - funzione che calcola tempo totale teorico
 - funzione che calcola dispendio energetico teorico 
-- funzione che calcola tempo totale teorico 
+- funzione che calcola tempo totale  
 - aggiungere funzione calcolo dispendio energetico 
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
@@ -44,7 +45,7 @@ double getService(int type_service, int stream) {
         case 1:
             return Exponential(VIDEO_SERVICE_TIME);
         case 2:
-            return Hyperexponential(WLAN_FRAME_UPLOAD_TIME,WLAN_P);
+            return Exponential(WLAN_FRAME_UPLOAD_TIME);
         case 3:
             return Exponential(ENODE_FRAME_UPLOAD_TIME);
         case 4:
@@ -57,13 +58,14 @@ double getService(int type_service, int stream) {
 }
 
 // Inserisce un job nella coda del blocco specificata
-void enqueue(block *block, double arrival) {
+void enqueue(block *block, double arrival, int type) {
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
 
     j->arrival = arrival;
     j->next = NULL;
+    j->type = type;
 
     if (block->tail)  // Appendi alla coda se esiste, altrimenti è la testa
         block->tail->next = j;
@@ -78,10 +80,11 @@ void enqueue(block *block, double arrival) {
 }
 
 
-// Rimuove il job dalla coda del blocco specificata
-void dequeue(block *block) {
+// Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
+int dequeue(block *block) {
     job *j = block->head_service;
-
+    int type; 
+    type = j->type;
     if (!j->next)
         block->tail = NULL;
 
@@ -94,6 +97,7 @@ void dequeue(block *block) {
         block->head_queue = NULL;
     }
     free(j);
+    return type;
 }
 
 // Ritorna il primo server libero nel blocco specificato
@@ -123,9 +127,9 @@ void process_arrival() {
         s->block->area.service += serviceTime;
         s->sum.served++;
         //insertSorted(, c); ??????
-        enqueue(&blocks[0], clock.arrival);  // lo appendo nella linked list di job del blocco 
+        enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
-        enqueue(&blocks[0], clock.arrival);  // lo appendo nella linked list di job del blocco 
+        enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
         blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
     clock.arrival = getArrival(clock.current);  // Genera prossimo arrivo
@@ -136,12 +140,12 @@ void process_completion(compl c) {
     int block_type = c.server->block->type;
     blocks[block_type].total_completions++;
     blocks[block_type].jobInBlock--;
-
+    int type;
     int destination;
     server *freeServer;
 
-    dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    //deleteElement(&global_sorted_completions, c); ??????
+    type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
+    //deleteElement(); ??????
 
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
@@ -152,13 +156,12 @@ void process_completion(compl c) {
         c.server->sum.served++;
         c.server->block->area.service += service_1;
         //insertSorted(); ?????????????????????
-
     } else {
         c.server->status = IDLE;
     }
 
     // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
-    if (c.server->need_resched) { //WLAN - INTERMITTENT
+    if (c.server->need_resched) { 
         c.server->online = OFFLINE;
         c.server->need_resched = false;
     }
@@ -168,17 +171,18 @@ void process_completion(compl c) {
         return;
     }
 
-    // Gestione blocco destinazione
-    destination = getDestination(c.server->block->type);  // Trova la destinazione adatta per il job appena servito ??
+    if(c.server->online= OFFLINE && block_type == WLAN_UNIT) {
+        return;
+    }
+    // Gestione blocco destinazione job interno
+    destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     if (destination == EXIT) {
-       // blocks[block_type].total_dropped++; ??
-       // dropped++; ??
         return;
     }
     if (destination != CLOUD_UNIT) {
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
-        enqueue(&blocks[destination], c.value);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
+        enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
 
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(&blocks[destination]);
@@ -191,20 +195,24 @@ void process_completion(compl c) {
             freeServer->sum.service += service_2;
             freeServer->sum.served++;
             freeServer->block->area.service += service_2;
-
             return;
         } else {
-            blocks[destination].jobInQueue++; // .. vedere in base alla perdita IF FRAME_VIDEO...
+            blocks[destination].jobInQueue++; 
             return;
         }
     }
 }
 
 // Ritorna il blocco destinazione di un job dopo il suo completamento
-int getDestination(enum block_types from) {
+int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
-            return routing_from_control_unit();
+            if(type==EXTERNAL) {  //external  
+                return VIDEO_UNIT;
+            }
+            else { //internal  
+                return routing_from_control_unit();
+            }
         case VIDEO_UNIT:
             return CONTROL_UNIT;
         case WLAN_UNIT:
@@ -219,15 +227,35 @@ int getDestination(enum block_types from) {
     }
 }
 
-// Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
-//dispatcher
+//Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
+//logica del dispatcher
 int routing_from_control_unit() {
 
+   if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
+           return ENODE_UNIT; 
+        }      
+   else {
+       double random = Uniform(0, 1);
+       if(random<=P_WLAN) {
+          return WLAN_UNIT;
+       } else {
+          return ENODE_UNIT;
+       }
+   }
 }
 
 //Thread che disattiva la WLAN essendo un server intermittente 
 int intermittent_wlan() {
-
+    double random = Uniform(0,1);
+    if(random<=P_OFF_WLAN) {
+        (*wlan_unit)->need_resched=true;
+        (*wlan_unit+1)->need_resched=true;
+    } else {
+        (*wlan_unit)->need_resched=false;
+        (*wlan_unit+1)->need_resched=false;
+        (*wlan_unit)->online=ONLINE;
+        (*wlan_unit+1)->online=ONLINE;
+    }
 }
 
 
@@ -376,12 +404,6 @@ int main(void) {
    printf("%ld\n",blocks[4].num_servers);
    printf("%ld\n",blocks[5].num_servers);
 
-   enqueue(&blocks[0],2305345.0);
-   double arrival =blocks[0].head_queue->arrival;
-   printf("job in queueu %f\n",arrival);
-     // Compute Erlang-B blocking probability using recursive function E()
-
- 
    double     prob_block;    // Erlang-B blocking probability
   
    prob_block = E(2, 0.67);
