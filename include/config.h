@@ -147,7 +147,8 @@ typedef struct {
 sorted_completions global_sorted_completions;  // Tiene in una lista ordinata tutti i completamenti nella rete così da ottenere il prossimo in O(log(N))
 block blocks[NUM_BLOCKS];
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
-
+int completed;
+int bypassed;
 
 // --------------------------------------------------------------------------------------------------
 
