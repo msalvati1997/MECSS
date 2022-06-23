@@ -1,13 +1,20 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 10
+#define NUM_METRICS 2
 #define START 0.0
 #define STOP  20000.0 //100.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
 #define WLAN_P 0.11
 #define ARRIVAL_RATE 60.0
+
+#define TH_CONTROL_UNIT 109.8873675
+#define TH_VIDEO 49.8873675
+#define TH_WLAN 65.9324202
+#define TH_ENODE 43.9549468
+#define TH_EDGE TH_WLAN+TH_ENODE
+#define TH_CLOUD TH_EDGE
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 0.0113674698
