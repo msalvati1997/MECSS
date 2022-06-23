@@ -172,17 +172,17 @@ void process_completion(compl c) {
         return;
     }
 
-    if(c.server->online= OFFLINE && block_type == WLAN_UNIT) {
-        return;
-    }
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     if (destination == EXIT) {
-        bypassed++;
+        blocks[block_type].total_dropped++;
+        dropped++;
         return;
     }
-    if (destination == CLOUD_UNIT) {
+    if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
             server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
+            blocks[destination].jobInBlock++;
+            enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
             c2.value = clock.current + service_2;
@@ -190,8 +190,9 @@ void process_completion(compl c) {
             cloud_server->sum.served++;
             cloud_server->block->area.service += service_2;
             completed++;
+            return;
     }
-    if (destination != CLOUD_UNIT) {
+    if (destination != CLOUD_UNIT & destination != VIDEO_UNIT) {
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
         enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
@@ -200,6 +201,7 @@ void process_completion(compl c) {
         freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
             compl c2 = {freeServer, INFINITY};
+             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
@@ -212,6 +214,30 @@ void process_completion(compl c) {
             blocks[destination].jobInQueue++; 
             return;
         }
+    }
+    //video unit - a perdita 
+    if (destination==VIDEO_UNIT)  {
+         blocks[destination].total_arrivals++;
+         freeServer = findFreeServer(&blocks[destination]);
+         if (freeServer != NULL) {
+          blocks[destination].jobInBlock++;
+          enqueue(&blocks[destination], c.value,INTERNAL);
+          compl c3 = {freeServer, INFINITY};
+          double service_3 = getService(destination, freeServer->stream);
+          c3.value = clock.current + service_3;
+          insertSorted(&global_sorted_completions, c3);
+          freeServer->status = BUSY;
+          freeServer->sum.service += service_3;
+          freeServer->sum.served++;
+          freeServer->block->area.service += service_3;
+          return;
+
+    } else { //LOSS
+        completed++;
+        bypassed++;
+        blocks[destination].total_bypassed++;
+        return;
+    }
     }
 }
 
@@ -352,6 +378,67 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calcolo bilanciamento energetico 
 }
 
+// Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
+void calculate_statistics_clock(block blocks[], double currentClock) {
+    char filename[100];
+    snprintf(filename, 100, "results/finite/continuos_finite.csv");
+    FILE *csv;
+    csv = open_csv_appendMode(filename);
+
+    double visit_rt = 0;
+    double m = 0.0;
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+        int arr = blocks[i].total_arrivals;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = min(m * mu, lambda_i);
+        if (i == CLOUD_UNIT) {
+            throughput = lambda_i;
+        }
+        double visit = throughput / external_arrival_rate;
+        visit_rt += wait * visit;
+    }
+    append_on_csv_v2(csv, visit_rt, currentClock);
+    fclose(csv);
+}
+
+// Resetta l'ambiente di esecuzione tra due run ad orizzonte finito
+void clear_environment() {
+    global_sorted_completions = empty_sorted;
+    for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
+        blocks[block_type].area.node = 0;
+        blocks[block_type].area.service = 0;
+        blocks[block_type].area.queue = 0;
+    }
+}
+
+
+
+
+// Resetta le statistiche tra un batch ed il successivo
+void reset_statistics() {
+    clock.batch_current = clock.current;
+    for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
+        blocks[block_type].total_arrivals = 0;
+        blocks[block_type].total_completions = 0;
+         blocks[block_type].total_bypassed = 0;
+        blocks[block_type].area.node = 0;
+        blocks[block_type].area.service = 0;
+        blocks[block_type].area.queue = 0;
+    }
+}
+
+
+
 //Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)
 int calculate_energy_consumption() {
 
@@ -370,6 +457,7 @@ int initialize() {
         blocks[block_type].jobInQueue = 0;
         blocks[block_type].total_arrivals = 0;
         blocks[block_type].total_completions = 0;
+        blocks[block_type].total_bypassed = 0;
         blocks[block_type].area.node = 0;
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;

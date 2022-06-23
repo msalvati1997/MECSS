@@ -48,8 +48,7 @@ typedef struct server_t server;
 typedef struct block_t block;
 typedef struct complement_t compl;
 typedef struct job_t job;
-
-
+static const sorted_completions empty_sorted;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //data structure
 //Struttura che mantiene il clock
@@ -105,6 +104,8 @@ struct block_t {
     int batch_arrivals;
     int total_arrivals;
     int total_completions;
+    int total_bypassed;
+    int total_dropped;
     double service_rate;
     struct area_t area;
 
@@ -149,7 +150,7 @@ block blocks[NUM_BLOCKS];
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
 int completed;
 int bypassed;
-
+int dropped;
 // --------------------------------------------------------------------------------------------------
 
 
