@@ -1,5 +1,20 @@
-#include "config.h"
+#include "../include/config.h"
+#include <stdio.h>
 #include <math.h>
+
+double statistics[NUM_BLOCKS][NUM_METRICS];
+
+int fattoriale(int n){
+    int fatt=1;
+    if(n > 0){
+        int i=1;
+        while(i <= n){
+            fatt=fatt*i;
+            i = i + 1;
+        }
+    }
+    return fatt;
+}
 
 //funzione t risposta M/M/1
 double rtime_mm1(double lambda, double mu){
@@ -11,37 +26,42 @@ double rtime_mm1(double lambda, double mu){
     return Etq + (1/mu);
 }
 
-//funzione t risposta M/M/2/2
-double rtime_mm22(double mu){
+//funzione t risposta M/M/2/2 e M/M/INF
+double rtime_mmkk(double mu){
     return 1/mu;
 }
 
 //t risposta M/M/k
-double rtime_mmk(double lambda, double mu, int k){
+double rtime_mmk(double lambda, double mu, double k){
     int i;
-    double P0;
+    double P0 = 0.0;
     double Pq;
-    double rho = lambda/mu;
+    double rho = lambda/(k*mu);
+    printf("rho = %f\n", rho);
     for(i=0; i<k; i++){
-        P0+=pow(k*rho,i)/(fattoriale(i));
+        double p = pow(k*rho,i);
+        double f = fattoriale(i);
+        P0+=p/f;
     }
-    P0+= pow(k*rho,k)/(fattoriale(k)*(1-rho));
+    double pk = pow(k*rho,k);
+    double fk = fattoriale(k);
+    P0+= pk/(fk*(1.0-rho));
+    double invP0 = 1.0/P0;
+    printf("il valore di P0 è %f\n", invP0);
+
+    Pq = (invP0*pk)/(fk*(1.0-rho));
+    printf("il valore di Pq è %f\n", Pq);
+
+    double etq = (Pq*(1.0/(k*mu))/(1.0-rho));
+    printf("il valore di E[tq] è %f\n", etq);
+
+    return etq +(1.0/(mu));
 }
 
-//t risposta M/M/INF
-double rtime_mminf(double mu){
-    return 1/mu; //no tempo di attesa
+
+int main(int argc, char** argv){
+    printf("mmk = %f\n", rtime_mmk(4.0,1.5,4.0));
+    return 0;
 }
 
-int fattoriale(int n){
-    int fatt=1;
-    if(n > 0){
-        int i=1;
-        while(i < n){
-            fatt=fatt*i;
-            i = i + 1;
-        }
-    }
-    return fatt;
-}
 

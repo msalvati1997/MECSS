@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
+#define NUM_METRICS 10
 #define START 0.0
 #define STOP  20000.0 //100.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
