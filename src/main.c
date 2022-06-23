@@ -8,8 +8,26 @@
 #include <string.h>
 #include <stdio.h>          // Needed for printf()
 #include <stdlib.h>  
+
+/*@todo 
+COSE DA FARE:
+- decidere i tipi di job e implementare logica se diversi 
+- implemetnare insertSorted  
+- implementare funzione delete element dalla lista sortata 
+- implementare get destination  (ritorna blocco) 
+- funzione di routing from control unit to cloud  
+- funzione di intermittenza WLAN (thread separato)
+- funzione resetta variabili 
+- aggiungere statistiche da fare 
+- funzione che calcola tempo totale teorico
+- funzione che calcola dispendio energetico teorico 
+- funzione che calcola tempo totale teorico 
+- aggiungere funzione calcolo dispendio energetico 
+*/
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
+
 double getArrival(double current) {
+
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1 / ARRIVAL_RATE);
@@ -133,7 +151,7 @@ void process_completion(compl c) {
         c.server->sum.service += service_1;
         c.server->sum.served++;
         c.server->block->area.service += service_1;
-        //insertSorted(&global_sorted_completions, c); ?????????????????????
+        //insertSorted(); ?????????????????????
 
     } else {
         c.server->status = IDLE;
@@ -168,7 +186,7 @@ void process_completion(compl c) {
             compl c2 = {freeServer, INFINITY};
             double service_2 = getService(destination, freeServer->stream);
             c2.value = clock.current + service_2;
-            //insertSorted(&global_sorted_completions, c2);  ??????????????????'
+            //insertSorted(&);  ??????????????????'
             freeServer->status = BUSY;
             freeServer->sum.service += service_2;
             freeServer->sum.served++;
@@ -186,26 +204,49 @@ void process_completion(compl c) {
 int getDestination(enum block_types from) {
     switch (from) {
         case CONTROL_UNIT:
-        // -> se tipo di job è richiesta di frame va su video_unit altrimenti su DISPATCHER 
-        // -> DISPATCHER : andare su WLAN o ENODE??
+            return routing_from_control_unit();
         case VIDEO_UNIT:
-         /// -> control_unit -- ricordarsi perdita
+            return CONTROL_UNIT;
         case WLAN_UNIT:
-        // -> edge 
+            return EDGE_UNIT;
         case ENODE_UNIT:
-        // -> edge
+            return EDGE_UNIT;
         case EDGE_UNIT:
-        // -> cloud 
+            return CLOUD_UNIT;
         case CLOUD_UNIT:
              return EXIT;
              break;
     }
 }
 
+// Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
+//dispatcher
+int routing_from_control_unit() {
+
+}
+
+//Thread che disattiva la WLAN essendo un server intermittente 
+int intermittent_wlan() {
+
+}
+
+
 // Inserisce un elemento nella lista ordinata
 int insertSorted() {
   
 }
+
+// Elimina un elemento dalla lista ordinata
+int deleteElement() {
+
+}
+
+//Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)
+int calculate_energy_consumption() {
+
+}
+
+
 
 int initialize() {
    streamID=0;
