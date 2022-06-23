@@ -145,8 +145,7 @@ void process_completion(compl c) {
     server *freeServer;
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    //deleteElement(); ??????
-
+    deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         blocks[block_type].jobInQueue--;
@@ -155,7 +154,7 @@ void process_completion(compl c) {
         c.server->sum.service += service_1;
         c.server->sum.served++;
         c.server->block->area.service += service_1;
-        //insertSorted(); ?????????????????????
+        insertSorted(&global_sorted_completions, c);
     } else {
         c.server->status = IDLE;
     }
@@ -166,7 +165,7 @@ void process_completion(compl c) {
         c.server->need_resched = false;
     }
 
-    //uscita dalla rete se il blocco esce dal CLOUD
+    //uscita dalla rete se il job esce dal CLOUD
     if (block_type == CLOUD_UNIT) {
         return;
     }
@@ -179,6 +178,15 @@ void process_completion(compl c) {
     if (destination == EXIT) {
         return;
     }
+    if (destination == CLOUD_UNIT) {
+            server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
+            compl c2 = {cloud_server, INFINITY};
+            double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
+            c2.value = clock.current + service_2;
+            cloud_server->sum.service += service_2;
+            cloud_server->sum.served++;
+            cloud_server->block->area.service += service_2;
+    }
     if (destination != CLOUD_UNIT) {
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
@@ -190,7 +198,7 @@ void process_completion(compl c) {
             compl c2 = {freeServer, INFINITY};
             double service_2 = getService(destination, freeServer->stream);
             c2.value = clock.current + service_2;
-            //insertSorted(&);  ??????????????????'
+            insertSorted(&global_sorted_completions, c2);
             freeServer->status = BUSY;
             freeServer->sum.service += service_2;
             freeServer->sum.served++;
@@ -334,6 +342,7 @@ int initialize() {
    printf("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
+   insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
    blocks[0].num_servers=1; //control unit
 
    video_unit=calloc(2,sizeof(server*));
@@ -375,6 +384,7 @@ int initialize() {
        (*video_unit+i)->loss=LOSS_SYSTEM;
        (*video_unit+i)->stream=streamID++;
        (*video_unit+i)->block=&blocks[1];  
+       insertSorted(&global_sorted_completions, (compl){(*video_unit+i), INFINITY});
        streamID=streamID++;
    }
 
@@ -385,6 +395,7 @@ int initialize() {
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
          (*wlan_unit+i)->stream=streamID++;
          (*wlan_unit+i)->block=&blocks[2];
+         insertSorted(&global_sorted_completions, (compl){(*wlan_unit+i), INFINITY});
          streamID=streamID++;
    }
 
@@ -394,6 +405,7 @@ int initialize() {
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
    (*enode_unit)->stream=streamID++;
    (*enode_unit)->block=&blocks[3];
+    insertSorted(&global_sorted_completions, (compl){(*enode_unit), INFINITY});
    streamID=streamID++;
    
    for(int i=0;i<blocks[4].num_servers;i++) {
@@ -403,6 +415,7 @@ int initialize() {
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
           (*edge_unit+i)->block=&blocks[4];
+          insertSorted(&global_sorted_completions, (compl){(*edge_unit), INFINITY});
           streamID=streamID++;
    }
 
@@ -411,9 +424,9 @@ int initialize() {
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
+   insertSorted(&global_sorted_completions, (compl){(*cloud_unit), INFINITY});
    (*cloud_unit)->block=&blocks[5];
 
-   printf("start memcpy\n");
    blocks[0].serv = calloc(1,sizeof(control_unit));
    memcpy(blocks[0].serv, &control_unit, sizeof(control_unit));
    blocks[1].serv = calloc(1,sizeof(video_unit));
