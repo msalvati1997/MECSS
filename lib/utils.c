@@ -12,3 +12,8 @@ double E(int c, double a)
   else
     return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
 }
+
+// Ritorna il minimo tra due valori
+double min(double x, double y) {
+    return (x < y) ? x : y;
+}
