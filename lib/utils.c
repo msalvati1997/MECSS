@@ -42,5 +42,10 @@ void *append_on_csv_v2(FILE *fpt, double ts, double p) {
 }
 // Apre un file csv e ritorna il puntatore a quel file
 
+// Ritorna il nome del blocco passando il suo identificativo
+char *stringFromEnum(int f) {
+    char *strings[] = {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
+    return strings[f];
+}
 
 

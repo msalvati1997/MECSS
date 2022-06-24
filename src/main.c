@@ -358,9 +358,11 @@ int intermittent_wlan() {
     printf("intermittent wlan\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
+        printf("wlan off\n");
         (*wlan_unit)->need_resched=true;
         (*wlan_unit+1)->need_resched=true;
     } else {
+        printf("wlan on\n");
         (*wlan_unit)->need_resched=false;
         (*wlan_unit+1)->need_resched=false;
         (*wlan_unit)->online=ONLINE;
@@ -371,7 +373,7 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
-   // printf("insert sorted\n");
+    printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -406,7 +408,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     printf("delete element\n");
     int i;
     int n = compls->num_completions;
-    printf("n : %d\n",n);
+    printf("num element before delete : %d\n",n);
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
@@ -421,6 +423,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     }
     compls->sorted_list[n - 1].value = INFINITY;
     compls->num_completions--;
+    printf("num element after delete : %d\n",compls->num_completions);
 
     return n - 1;
 }
@@ -431,23 +434,25 @@ double my_min(double x, double y) {
 }
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
-    printf("finite horizon run\n");
+    printf("Method : Finite horizon run\n");
+    printf("Stop time %d\n",stop_time);
     int n = 1;
     while (clock.arrival <= stop_time) {
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
      
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-        printf("nextCompletion value : %f\n", nextCompletion->value);
+        printf("NextCompletion value : %f\n", nextCompletion->value);
+        printf("Arrival %f\n",clock.arrival);
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
+                printf("num job in block:%d\n",blocks[i].jobInBlock);
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
                 blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
-      
-
+        printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
             printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
             process_arrival();
@@ -455,7 +460,8 @@ void finite_horizon_run(int stop_time, int repetition) {
             printf("process completion finite horizon \n");
             process_completion(*nextCompletion);
         }
-        if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {
+        if (clock.current >= (n - 1) * 30 && clock.current < (n)*30 && completed > 16 && clock.arrival < stop_time) {
+            printf("calculate statistic interno \n ");
             calculate_statistics_clock(blocks, clock.current);
             n++;
         }
@@ -472,6 +478,7 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
     printf("\n\n==== Finite Horizon Simulation | sim_time %d | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     printf("\n\n");
     for (int r = 0; r < repetitions; r++) {
+        printf("simulazione ciclo numero %d\n", r);
         finite_horizon_run(stop_time, r);
         clear_environment();
     }
@@ -510,9 +517,58 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         }
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
+        print_statistics(&blocks[i], currentClock);
     }
     append_on_csv_v2(csv, visit_rt, currentClock);
     fclose(csv);
+}
+
+// Stampa a schermo le statistiche calcolate per ogni singolo blocco
+void print_statistics(block blocks[], double currentClock) {
+    char type[20];
+    double system_total_wait = 0;
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+        strcpy(type, stringFromEnum(blocks[i].type));
+
+        int arr = blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / blocks[i].total_arrivals;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        system_total_wait += wait;
+
+        printf("\n\n======== Result for block %s ========\n", type);
+        printf("Number of Servers ................... = %d\n",blocks[i].num_servers);
+        printf("Arrivals ............................ = %d\n", arr);
+        printf("Completions.......................... = %d\n", blocks[i].total_completions);
+        printf("Job in Queue at the end ............. = %d\n", jq);
+        printf("Average interarrivals................ = %6.6f\n", inter);
+
+        printf("Average wait ........................ = %6.6f\n", wait);
+        if (i == VIDEO_UNIT) {
+            printf("Average wait (2)..................... = %6.6f\n", blocks[i].area.node / blocks[i].total_arrivals);
+            printf("Number bypassed ..................... = %d\n", blocks[i].total_bypassed);
+        }
+        printf("Average delay ....................... = %6.6f\n", delay);
+        printf("Average service time ................ = %6.6f\n", service);
+
+        printf("Average # in the queue .............. = %6.6f\n", blocks[i].area.queue / currentClock);
+        printf("Average # in the node ............... = %6.6f\n", blocks[i].area.node / currentClock);
+
+        printf("\n    server     utilization     avg service\n");
+        double p = 0;
+        int n = 0;
+        for (int j = 0; j < blocks[i].num_servers; j++) {
+            server *s = *(blocks[i].serv+j);
+            printf("%8d %15.5f %15.2f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
+            p += s->sum.service / currentClock;
+            n++;
+        }
+    }
 }
 
 // Calcola le statistiche specificate
@@ -542,8 +598,10 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         visit_rt += wait * visit;
 
         double utilization = lambda_i / (m * mu);
+        print_statistics(&blocks[i],currentClock);
     }
     rt_arr[rep] = visit_rt;
+    printf("print statistiche finali\n");
 }
 
 // Resetta l'ambiente di esecuzione tra due run ad orizzonte finito
