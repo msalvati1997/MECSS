@@ -125,11 +125,12 @@ int dequeue(block *block_t) {
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
     int num = b->num_servers;
-    server *serv = &(b->serv);
-    for (int i = 0; i < b->num_servers; i++) {
-        if((serv+i)->status==IDLE){
-            printf("Found free server in position i: %d\n\n", i);
-            return (serv+i);
+  
+    int n= b->num_servers;
+    for (int i = 0; i <  num; i++) {
+        printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
+        if((*b->serv+i)->status==IDLE){
+            return (*b->serv+i);
         }
     }
     return NULL;
@@ -733,19 +734,20 @@ int initialize() {
    (*cloud_unit)->block=malloc(sizeof(block));
    (*cloud_unit)->block=&blocks[5];
 
-   blocks[0].serv = calloc(1,sizeof(control_unit));
-   memcpy(blocks[0].serv, &control_unit, sizeof(control_unit));
-   blocks[1].serv = calloc(1,sizeof(video_unit));
-   memcpy(blocks[1].serv, &video_unit, sizeof(video_unit));
-   blocks[2].serv = calloc(1,sizeof(wlan_unit));
-   memcpy(blocks[2].serv, &wlan_unit, sizeof(wlan_unit));
-   blocks[3].serv = calloc(1,sizeof(enode_unit));
-   memcpy(blocks[3].serv, &enode_unit, sizeof(enode_unit));
-   blocks[4].serv = calloc(1,sizeof(edge_unit));
-   memcpy(blocks[4].serv, &edge_unit, sizeof(edge_unit));
-   blocks[5].serv = calloc(1,sizeof(cloud_unit));
-   memcpy(blocks[5].serv, &cloud_unit, sizeof(cloud_unit));
+   blocks[0].serv = malloc(sizeof(server*));
+   blocks[0].serv=control_unit;
+   blocks[1].serv = malloc(sizeof(server*)*2);
+   blocks[1].serv=video_unit;
+   blocks[2].serv = malloc(sizeof(server*)*2);
+   blocks[2].serv=wlan_unit;
+   blocks[3].serv = malloc(sizeof(server*));
+   blocks[3].serv=enode_unit;
+   blocks[4].serv = malloc(sizeof(server*)*4);
+   blocks[4].serv =edge_unit;
+   blocks[5].serv = malloc(sizeof(server*));
+   blocks[5].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
+   printf("status of video %d\n", (*blocks[1].serv)->status);
 
 
    insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
