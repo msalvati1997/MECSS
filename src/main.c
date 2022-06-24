@@ -70,8 +70,7 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-    //printf("Enqueue\n");
-    printf("Type  of arrival %d\n",type); //External 6
+    printf("Enqueue\n");
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -82,16 +81,16 @@ void enqueue(block *block, double arrival, int type) {
 
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
         block->tail->next = j;
-        //printf("Append to tail\n");
+        printf("Append to tail\n");
     }else{
         block->head_service = j;
-         //printf("Append to head\n");
+         printf("Append to head\n");
     }
 
     block->tail = j;
 
     if (block->head_queue == NULL) {
-        // printf("head queue null\n");
+        printf("head queue null\n");
         block->head_queue = j;
     }
 }
@@ -99,19 +98,22 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
-    //printf("Dequeue\n");
+    printf("Dequeue\n");
     job *j = malloc(sizeof(job));
     j = (block_t->head_service);
-    printf("Arrival %f\n",j->arrival);
-    int type = 0; 
-    type = j->type;
-    printf("Type of arrival: %d\n",j->type);
-    if (!j->next)
+    //printf("Arrival %f\n",j->arrival);
+   // printf("Type of arrival: %d\n",j->type);
+    int type= j->type;
+  
+    //printf("before j next");
+    if (!j->next) {
         block_t->tail = NULL;
+    }
+    //printf("before head\n");
     block_t->head_service = j->next;
-
+   
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
-        printf("Take next job of the queue\n");
+      //  printf("Take next job of the queue\n");
         job *tmp = block_t->head_queue->next;
         block_t->head_queue = tmp;
     } else {
@@ -128,8 +130,9 @@ server *findFreeServer(block *b) {
   
     int n= b->num_servers;
     for (int i = 0; i <  num; i++) {
-        printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
+        //printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
         if((*b->serv+i)->status==IDLE){
+            printf("SERVER IDLE FOUND IN %s\n", stringFromEnum((*b->serv)->block->type));
             return (*b->serv+i);
         }
     }
@@ -153,15 +156,14 @@ void process_arrival() {
         s->block=&blocks[0];
         c.server=s;
         c.value = clock.current + serviceTime;
-        printf("valore completamento: %d\n", c.value);
         s->status = BUSY;  // Setto stato busy
-        printf("Stato cambiato in Busy\n");
+        //printf("Stato cambiato in Busy\n");
         s->sum.service += serviceTime;
-        printf("Service time sum: %f", s->sum.service);
+        //printf("Service time sum: %f", s->sum.service);
         //////////////////////////////////////////////
         //printf("num server %f\n",(s->block)->num_servers);
         s->block->area.service += serviceTime;
-        printf("Service time area: %f", s->block->area.service);
+        //printf("Service time area: %f", s->block->area.service);
         s->sum.served++;
         printf("served jobs: %ld\n", s->sum.served);
         insertSorted(&global_sorted_completions, c);
@@ -188,6 +190,7 @@ void process_completion(compl c) {
     printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %s\n", stringFromEnum(block_type));
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
+    printf("tipo di job %s-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
@@ -221,7 +224,7 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    printf("Destination: %s\n", stringFromEnum(destination));
+    printf("FROM %s TO DESTINATION: %s\n", stringFromEnum(type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -244,14 +247,13 @@ void process_completion(compl c) {
     if (destination != CLOUD_UNIT && destination != VIDEO_UNIT) {
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
-        enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
 
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
             printf("Server libero trovato\n");
             compl c2 = {freeServer, INFINITY};
-             enqueue(&blocks[destination], c.value,INTERNAL);
+            enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
             printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
@@ -361,7 +363,6 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
-    printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -376,7 +377,7 @@ int insertSorted(sorted_completions *compls, compl completion) {
 
 // Ricerca binaria di un elemento su una lista ordinata
 int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
-    printf("binary search\n");
+    //printf("binary search\n");
     if (high < low) {
         return -1;
     }
@@ -393,10 +394,10 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
 
 // Function to delete an element
 int deleteElement(sorted_completions *compls, compl completion) {
-    printf("delete element\n");
+    //printf("delete element\n");
     int i;
     int n = compls->num_completions;
-    printf("num element before delete : %d\n",n);
+   // printf("num element before delete : %d\n",n);
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
@@ -411,7 +412,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     }
     compls->sorted_list[n - 1].value = INFINITY;
     compls->num_completions--;
-    printf("num element after delete : %d\n",compls->num_completions);
+    //printf("num element after delete : %d\n",compls->num_completions);
 
     return n - 1;
 }
@@ -442,10 +443,11 @@ void finite_horizon_run(int stop_time, int repetition) {
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
         printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
-            printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
+            //printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
+            printf("\n--------------------------------------------\n");
             process_arrival();
         } else {
-            printf("process completion finite horizon \n");
+            printf("\n--------------------------------------------\n");
             process_completion(*nextCompletion);
         }
         if (clock.current >= (n - 1) * 30 && clock.current < (n)*30 && completed > 16 && clock.arrival < stop_time) {
