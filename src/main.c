@@ -51,29 +51,18 @@ double getService(int type_service, int stream) {
 
     switch (type_service) {
         case 0:
-            double e = Exponential(CONTROL_UNIT_SERVICE_TIME);
-            printf("Service time case control unit: %f\n", e);
-            return e;
+
+            return  Exponential(CONTROL_UNIT_SERVICE_TIME);
         case 1:
-            double e = Exponential(VIDEO_SERVICE_TIME);
-            printf("Service time case video unit: %f\n", e);
-            return e;
+            return Exponential(VIDEO_SERVICE_TIME);
         case 2:
-            double e = Exponential(WLAN_FRAME_UPLOAD_TIME);
-            printf("Service time case wlan unit: %f\n", e);
-            return e;
+            return Exponential(WLAN_FRAME_UPLOAD_TIME);
         case 3:
-            double e = Exponential(ENODE_FRAME_UPLOAD_TIME);
-            printf("Service time case enode unit: %f\n", e);
-            return e;
+            return Exponential(ENODE_FRAME_UPLOAD_TIME);
         case 4:
-            double e = Exponential(EDGE_PROCESSING_TIME);
-            printf("Service time case edge unit: %f\n", e);
-            return e;
+            return Exponential(EDGE_PROCESSING_TIME);
         case 5:
-            double e = Exponential(CLOUD_PROCESSING_TIME);
-            printf("Service time case cloud unit: %f\n", e);
-            return e; 
+            return Exponential(CLOUD_PROCESSING_TIME);; 
         default:
             printf("Case not defined\n");
             return 0;
@@ -83,7 +72,7 @@ double getService(int type_service, int stream) {
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
     printf("Enqueue\n");
-    printf("Type: %d\n",type); //External 6
+    printf("Type  of arrival %d\n",type); //External 6
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -117,7 +106,7 @@ int dequeue(block *block_t) {
     printf("Arrival %f\n",j->arrival);
     int type = 0; 
     type = j->type;
-    printf("Type: %d\n",j->type);
+    printf("Type of arrival: %d\n",j->type);
     if (!j->next)
         block_t->tail = NULL;
     block_t->head_service = j->next;
