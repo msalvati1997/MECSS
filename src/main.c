@@ -35,41 +35,55 @@ FILE *open_csv(char *filename) {
 }
 
 double getArrival(double current) {
-    printf("get arrival\n");
+    
 
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1 / ARRIVAL_RATE);
+    printf("Arrival value: %f\n", arrival);
     return arrival;
 }
 
 // Genera un tempo di servizio esponenziale di media specificata e stream del servente individuato
 double getService(int type_service, int stream) {
     SelectStream(stream);
-    printf("get service\n");
+    
 
     switch (type_service) {
         case 0:
-            return Exponential(CONTROL_UNIT_SERVICE_TIME);
+            double e = Exponential(CONTROL_UNIT_SERVICE_TIME);
+            printf("Service time case control unit: %f\n", e);
+            return e;
         case 1:
-            return Exponential(VIDEO_SERVICE_TIME);
+            double e = Exponential(VIDEO_SERVICE_TIME);
+            printf("Service time case video unit: %f\n", e);
+            return e;
         case 2:
-            return Exponential(WLAN_FRAME_UPLOAD_TIME);
+            double e = Exponential(WLAN_FRAME_UPLOAD_TIME);
+            printf("Service time case wlan unit: %f\n", e);
+            return e;
         case 3:
-            return Exponential(ENODE_FRAME_UPLOAD_TIME);
+            double e = Exponential(ENODE_FRAME_UPLOAD_TIME);
+            printf("Service time case enode unit: %f\n", e);
+            return e;
         case 4:
-            return Exponential(EDGE_PROCESSING_TIME);
+            double e = Exponential(EDGE_PROCESSING_TIME);
+            printf("Service time case edge unit: %f\n", e);
+            return e;
         case 5:
-            return Exponential(CLOUD_PROCESSING_TIME); 
+            double e = Exponential(CLOUD_PROCESSING_TIME);
+            printf("Service time case cloud unit: %f\n", e);
+            return e; 
         default:
+            printf("Case not defined\n");
             return 0;
     }
 }
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-    printf("enqueue\n");
-    printf("type %d\n",type); //External 6
+    printf("Enqueue\n");
+    printf("Type: %d\n",type); //External 6
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -78,14 +92,18 @@ void enqueue(block *block, double arrival, int type) {
     j->next = NULL;
     j->type = type;
 
-    if (block->tail)  // Appendi alla coda se esiste, altrimenti è la testa
+    if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
         block->tail->next = j;
-    else
+        printf("Append to tail\n");
+    }else{
         block->head_service = j;
+         printf("Append to head\n");
+    }
 
     block->tail = j;
 
     if (block->head_queue == NULL) {
+         printf("head queue null\n");
         block->head_queue = j;
     }
 }
@@ -93,22 +111,23 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
-    printf("dequeue\n");
+    printf("Dequeue\n");
     job *j = malloc(sizeof(job));
     j = (block_t->head_service);
-    printf("arrival %f\n",j->arrival);
-    int type; 
-    type=0;
+    printf("Arrival %f\n",j->arrival);
+    int type = 0; 
     type = j->type;
-    printf("type: %d\n",j->type);
+    printf("Type: %d\n",j->type);
     if (!j->next)
         block_t->tail = NULL;
     block_t->head_service = j->next;
 
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
+        printf("Take next job of the queue\n");
         job *tmp = block_t->head_queue->next;
         block_t->head_queue = tmp;
     } else {
+        printf("No job in the queue\n");
         block_t->head_queue = NULL;
     }
     free(j);
@@ -117,11 +136,12 @@ int dequeue(block *block_t) {
 
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
-    printf("find free server\n\n");
+    printf("Find free server called\n\n");
     int num = b->num_servers;
     server *serv = &(b->serv);
     for (int i = 0; i < b->num_servers; i++) {
         if((serv+i)->status==IDLE){
+            printf("Found free server in position i: %d\n\n", i);
             return (serv+i);
         }
     }
@@ -130,34 +150,32 @@ server *findFreeServer(block *b) {
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
-    printf("process arrival\n");
+    printf("Process arrival\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
     server *s = findFreeServer(&blocks[0]);
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
-        printf("free server\n");
         double serviceTime = getService(CONTROL_UNIT, s->stream);
-        printf("after get service\n");
         compl c = {s, INFINITY};
         s->block=&blocks[0];
         c.server=s;
         c.value = clock.current + serviceTime;
-        printf("printf type %d\n", blocks[0].type);
+        printf("valore completamento: %d\n", c.value);
         s->status = BUSY;  // Setto stato busy
-        printf("2 \n");
         s->sum.service += serviceTime;
+        printf("Service time sum: %f", s->sum.service);
         //////////////////////////////////////////////
         //printf("num server %f\n",(s->block)->num_servers);
         s->block->area.service += serviceTime;
-        printf("4\n");
+        printf("Service time area: %f", s->block->area.service);
         s->sum.served++;
-        printf("before insert sorted\n");
+        printf("served jobs: %ld\n", s->sum.served);
         insertSorted(&global_sorted_completions, c);
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
-        printf("not free\n");
+        printf("Server free not found\n");
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
         blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
@@ -166,7 +184,7 @@ void process_arrival() {
 
 // Processa un next-event di completamento
 void process_completion(compl c) {
-    printf("process completion \n");
+    printf("Process completion \n");
     block *block_ = (c.server)->block;
     int block_type = (block_)->type;
     blocks[block_type].total_completions++;
@@ -179,6 +197,7 @@ void process_completion(compl c) {
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
+        printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
         c.value = clock.current + service_1;
@@ -187,17 +206,20 @@ void process_completion(compl c) {
         c.server->block->area.service += service_1;
         insertSorted(&global_sorted_completions, c);
     } else {
+        printf("Job non presenti in coda\n");
         c.server->status = IDLE;
     }
 
     // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
-    if (c.server->need_resched) { 
+    if (c.server->need_resched) {
+        printf("server schedulato per la terminazione\n"); 
         c.server->online = OFFLINE;
         c.server->need_resched = false;
     }
 
     //uscita dalla rete se il job esce dal CLOUD
     if (block_type == CLOUD_UNIT) {
+        printf("Job esce dalla rete\n");
         completed++;
         return;
     }
@@ -205,11 +227,13 @@ void process_completion(compl c) {
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     if (destination == EXIT) {
+        printf("job destinato all'uscita\n");
         blocks[block_type].total_dropped++;
         dropped++;
         return;
     }
     if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
+            printf("job destinato alla cloud unit\n");
             server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
@@ -222,7 +246,8 @@ void process_completion(compl c) {
             completed++;
             return;
     }
-    if (destination != CLOUD_UNIT & destination != VIDEO_UNIT) {
+    if (destination != CLOUD_UNIT && destination != VIDEO_UNIT) {
+        printf("Destination: %d", destination);
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
         enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
@@ -230,6 +255,7 @@ void process_completion(compl c) {
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
+            printf("Server libero trovato\n");
             compl c2 = {freeServer, INFINITY};
              enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
@@ -241,15 +267,18 @@ void process_completion(compl c) {
             freeServer->block->area.service += service_2;
             return;
         } else {
+            printf("Server libero non disponibile\n");
             blocks[destination].jobInQueue++; 
             return;
         }
     }
     //video unit - a perdita 
     if (destination==VIDEO_UNIT)  {
+        printf("Destinazione: Video Unit\n");
          blocks[destination].total_arrivals++;
          freeServer = findFreeServer(&blocks[destination]);
          if (freeServer != NULL) {
+          printf("Server libero trovato per video unit \n");
           blocks[destination].jobInBlock++;
           enqueue(&blocks[destination], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
@@ -263,6 +292,7 @@ void process_completion(compl c) {
           return;
 
     } else { //LOSS
+        printf("Telecamera libera non disponibile\n");
         completed++;
         bypassed++;
         blocks[destination].total_bypassed++;
@@ -277,38 +307,47 @@ int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
+                printf("Routing to Video Unit\n");
                 return VIDEO_UNIT;
             }
-            else { //internal  
+            else { //internal 
+                printf("Internal Routing\n"); 
                 return routing_from_control_unit();
             }
         case VIDEO_UNIT:
-             return CONTROL_UNIT;
+            printf("Routing to Control Unit\n");
+            return CONTROL_UNIT;
         case WLAN_UNIT:
-             return EDGE_UNIT;
+            printf("Routing to Edge Unit\n");
+            return EDGE_UNIT;
         case ENODE_UNIT:
-             return EDGE_UNIT;
+            printf("Routing to Edge Unit\n");
+            return EDGE_UNIT;
         case EDGE_UNIT:
-             return CLOUD_UNIT;
+            printf("Routing to Cloud Unit\n");
+            return CLOUD_UNIT;
         case CLOUD_UNIT:
-             return EXIT;
-             break;
+            printf("Routing to Exit\n");
+            return EXIT;
+            break;
     }
 }
 
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
 int routing_from_control_unit() {
-    printf("routing control unit\n");
 
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
+           printf("Routing to Enode from Control Unit\n");
            return ENODE_UNIT; 
         }      
    else {
        double random = Uniform(0, 1);
        if(random<=P_WLAN) {
+          printf("Routing to Wlan from Control Unit\n"); 
           return WLAN_UNIT;
        } else {
+          printf("Routing to Enode from Control Unit because Wlan is Off\n"); 
           return ENODE_UNIT;
        }
    }
