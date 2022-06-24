@@ -26,14 +26,6 @@ FILE *open_csv(char *filename) {
     return fpt;
 }
 
-// Ritorna il nome del blocco passando il suo identificativo
-char* stringFromEnum(int f) {
-
-    char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
-    char * str = strings[f];
-    return strings[f];
-}
-
 double getArrival(double current) {
     
 
@@ -125,7 +117,6 @@ int dequeue(block *block_t) {
 
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(block *b) {
-    printf("Find free server called\n\n");
     int num = b->num_servers;
     server *serv = &(b->serv);
     for (int i = 0; i < b->num_servers; i++) {
@@ -156,6 +147,7 @@ void process_arrival() {
         c.value = clock.current + serviceTime;
         printf("valore completamento: %d\n", c.value);
         s->status = BUSY;  // Setto stato busy
+        printf("Stato cambiato in Busy\n");
         s->sum.service += serviceTime;
         printf("Service time sum: %f", s->sum.service);
         //////////////////////////////////////////////
@@ -185,7 +177,7 @@ void process_completion(compl c) {
     int destination;
     server *freeServer;
     printf("GENERAZIONE PROCESSAMENTO NEXT EVENT\n");
-    printf("BLOCCO DI PROCESSAMENTO  NEXT EVENT : %s\n", stringFromEnum(block_type));
+    printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %d\n", block_type);
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
@@ -221,7 +213,7 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    printf("DESTINATION: %s\n", stringFromEnum(destination));
+    printf("Destination: %s\n", stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -251,12 +243,13 @@ void process_completion(compl c) {
         if (freeServer != NULL) {
             printf("Server libero trovato\n");
             compl c2 = {freeServer, INFINITY};
-            enqueue(&blocks[destination], c.value,INTERNAL);
+             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
             printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
             freeServer->status = BUSY;
+            printf("stato cambiato in Busy\n");
             freeServer->sum.service += service_2;
             freeServer->sum.served++;
             freeServer->block->area.service += service_2;
@@ -281,6 +274,7 @@ void process_completion(compl c) {
           c3.value = clock.current + service_3;
           insertSorted(&global_sorted_completions, c3);
           freeServer->status = BUSY;
+          printf("Stato cambiato in busy\n");
           freeServer->sum.service += service_3;
           freeServer->sum.served++;
           freeServer->block->area.service += service_3;
@@ -359,7 +353,7 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
-   // printf("insert sorted\n");
+    printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -374,7 +368,7 @@ int insertSorted(sorted_completions *compls, compl completion) {
 
 // Ricerca binaria di un elemento su una lista ordinata
 int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
-   // printf("binary search\n");
+    printf("binary search\n");
     if (high < low) {
         return -1;
     }
@@ -385,21 +379,21 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
     if (completion.value == compls->sorted_list[mid].value) {
         return binarySearch(compls, (mid + 1), high, completion);
     }
-    //printf("binary done");
+    printf("binary done");
     return binarySearch(compls, low, (mid - 1), completion);
 }
 
 // Function to delete an element
 int deleteElement(sorted_completions *compls, compl completion) {
-    //printf("delete element\n");
+    printf("delete element\n");
     int i;
     int n = compls->num_completions;
-   // printf("num element before delete : %d\n",n);
+    printf("num element before delete : %d\n",n);
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
     if (pos == -1) {
-       // printf("Element not found\n");
+        printf("Element not found\n");
         return n;
     }
 
@@ -786,5 +780,4 @@ void write_rt_csv_finite() {
     }
     
  }
-
 
