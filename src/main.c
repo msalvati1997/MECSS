@@ -184,7 +184,7 @@ void process_completion(compl c) {
     int destination;
     server *freeServer;
     printf("GENERAZIONE PROCESSAMENTO NEXT EVENT\n");
-    printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %d\n", block_type);
+    printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %s\n", stringFromEnum(block_type));
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
