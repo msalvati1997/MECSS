@@ -119,18 +119,19 @@ int dequeue(block *block_t) {
 }
 
 // Ritorna il primo server libero nel blocco specificato
-server *findFreeServer(block *b) {
+server *findFreeServer(int block_type) {
+    block * b = &blocks[block_type];
     int num = b->num_servers;
-  
-    int n= b->num_servers;
+    printf("num server %d\n", num);
+    printf("type %d\n", block_type);
     for (int i = 0; i <  num; i++) {
         //printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
-        if((*b->serv+i)->status==IDLE){
-            printf("SERVER IDLE FOUND IN %s\n", stringFromEnum((*b->serv)->block->type));
-            return (*b->serv+i);
+        if((b->serv[i])->status==IDLE){
+            printf("SERVER IDLE FOUND IN %d - %s\n", b->type, stringFromEnum(b->type));
+            return b->serv[i];
         }
     }
-    printf("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum((*b->serv)->block->type));
+    printf("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum(b->type));
     return NULL;
 }
 
@@ -141,7 +142,7 @@ void process_arrival() {
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
-    server *s = findFreeServer(&blocks[0]);
+    server *s = findFreeServer(0);
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
@@ -244,7 +245,7 @@ void process_completion(compl c) {
         blocks[destination].jobInBlock++;
 
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
-        freeServer = findFreeServer(&blocks[destination]);
+        freeServer = findFreeServer(destination);
         if (freeServer != NULL) {
             compl c2 = {freeServer, INFINITY};
             enqueue(&blocks[destination], c.value,INTERNAL);
@@ -265,12 +266,14 @@ void process_completion(compl c) {
     //video unit - a perdita 
     if (destination==VIDEO_UNIT)  {
          blocks[destination].total_arrivals++;
-         freeServer = findFreeServer(&blocks[destination]);
+         freeServer = findFreeServer(destination);
          if (freeServer != NULL) {
           blocks[destination].jobInBlock++;
-          enqueue(&blocks[destination], c.value,INTERNAL);
+          enqueue(&blocks[VIDEO_UNIT], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
+          printf("before get service\n");
           double service_3 = getService(destination, freeServer->stream);
+           printf("before after servicen\n");
           c3.value = clock.current + service_3;
           insertSorted(&global_sorted_completions, c3);
           freeServer->status = BUSY;
@@ -641,7 +644,6 @@ int initialize() {
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
-
    video_unit=calloc(2,sizeof(server*));
    (*video_unit)=calloc(1,sizeof(server));
    blocks[1].num_servers=2; //video 
@@ -684,6 +686,8 @@ int initialize() {
        (*video_unit+i)->block=&blocks[1];  
        streamID=streamID++;
    }
+   blocks[1].type=1;
+
 
    for(int i=0;i<blocks[2].num_servers;i++) {
          (*wlan_unit+i)->id=i;
@@ -737,7 +741,7 @@ int initialize() {
    blocks[5].serv = malloc(sizeof(server*));
    blocks[5].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
-   printf("status of video %d\n", (*blocks[1].serv)->status);
+   blocks[1].type=1;
 
 
    insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
@@ -754,6 +758,9 @@ int initialize() {
    global_sorted_completions.num_completions=0;
 
    printf("%f\n",clock.arrival);
+   for(int i=0;i<6;i++) {
+   printf("%d type\n", blocks[i].type);
+   }
    printf("finish initialized\n");
 }
 
