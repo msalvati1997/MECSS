@@ -41,7 +41,7 @@
 #define P_WLAN 0.6
 #define P_OFF_WLAN 0.11
 // Numero di ripetizioni e batch
-#define NUM_REPETITIONS 128
+#define NUM_REPETITIONS 2
 #define BATCH_B 1024
 #define BATCH_K 128
 

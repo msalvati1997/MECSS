@@ -319,9 +319,11 @@ int intermittent_wlan() {
     printf("intermittent wlan\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
+        printf("wlan off\n");
         (*wlan_unit)->need_resched=true;
         (*wlan_unit+1)->need_resched=true;
     } else {
+        printf("wlan on\n");
         (*wlan_unit)->need_resched=false;
         (*wlan_unit+1)->need_resched=false;
         (*wlan_unit)->online=ONLINE;
@@ -332,7 +334,7 @@ int intermittent_wlan() {
 
 // Inserisce un elemento nella lista ordinata
 int insertSorted(sorted_completions *compls, compl completion) {
-   // printf("insert sorted\n");
+    printf("insert sorted\n");
     int i;
     int n = compls->num_completions;
 
@@ -367,7 +369,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     printf("delete element\n");
     int i;
     int n = compls->num_completions;
-    printf("n : %d\n",n);
+    printf("num element before delete : %d\n",n);
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
@@ -382,6 +384,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     }
     compls->sorted_list[n - 1].value = INFINITY;
     compls->num_completions--;
+    printf("num element after delete : %d\n",compls->num_completions);
 
     return n - 1;
 }
@@ -400,17 +403,17 @@ void finite_horizon_run(int stop_time, int repetition) {
         server *nextCompletionServer = nextCompletion->server;
      
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-        printf("nextCompletion value : %f\n", nextCompletion->value);
+        printf("NextCompletion value : %f\n", nextCompletion->value);
         printf("Arrival %f\n",clock.arrival);
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
+                printf("num job in block:%d\n",blocks[i].jobInBlock);
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
                 blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
-      
-
+        printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
             printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
             process_arrival();
@@ -475,9 +478,9 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         }
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
+        print_statistics(&blocks[i], currentClock);
     }
     append_on_csv_v2(csv, visit_rt, currentClock);
-    print_statistics(blocks, currentClock);
     fclose(csv);
 }
 
