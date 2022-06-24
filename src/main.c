@@ -102,25 +102,28 @@ int dequeue(block *block_t) {
     job *j = malloc(sizeof(job));
     j = (block_t->head_service);
     //printf("Arrival %f\n",j->arrival);
-   // printf("Type of arrival: %d\n",j->type);
+    
     int type= j->type;
-  
-    //printf("before j next");
+    printf("Type of arrival: %d\n",j->type);
     if (!j->next) {
         block_t->tail = NULL;
     }
-    //printf("before head\n");
+    printf("before head\n");
+    
     block_t->head_service = j->next;
-   
+    printf("after head\n");
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
-      //  printf("Take next job of the queue\n");
-        job *tmp = block_t->head_queue->next;
+        printf("Take next job of the queue\n");
+        job* tmp = block_t->head_queue->next;
+        
         block_t->head_queue = tmp;
+        printf("next job now\n");
     } else {
         printf("No job in the queue\n");
         block_t->head_queue = NULL;
     }
     free(j);
+    printf("funziona\n");
     return type;
 }
 
@@ -190,19 +193,20 @@ void process_completion(compl c) {
     printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %s\n", stringFromEnum(block_type));
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    printf("tipo di job %s-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
+    printf("tipo di job %d-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
-        printf("Service time: %f", service_1);
+        printf("Service time: %f\n", service_1);
         c.value = clock.current + service_1;
         c.server->sum.service += service_1;
         c.server->sum.served++;
         c.server->block->area.service += service_1;
         insertSorted(&global_sorted_completions, c);
+        printf("Generato prox completamento\n");
     } else {
         printf("Job non presenti in coda\n");
         c.server->status = IDLE;
@@ -223,8 +227,8 @@ void process_completion(compl c) {
     }
 
     // Gestione blocco destinazione job interno
-    destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    printf("FROM %s TO DESTINATION: %s\n", stringFromEnum(type), stringFromEnum(destination));
+    destination = getDestination(c.server->block->type,block_type);  // Trova la destinazione adatta per il job appena servito 
+    printf("FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -465,7 +469,7 @@ void finite_horizon_run(int stop_time, int repetition) {
 // Esegue le ripetizioni di singole run a orizzonte finito
 void finite_horizon_simulation(int stop_time, int repetitions) {
     printf("finite horizon simulation\n");
-    printf("\n\n==== Finite Horizon Simulation | sim_time %d | #repetitions #%d ====", STOP, NUM_REPETITIONS);
+    printf("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     printf("\n\n");
     for (int r = 0; r < repetitions; r++) {
         printf("simulazione ciclo numero %d\n", r);
