@@ -26,6 +26,13 @@ FILE *open_csv(char *filename) {
     return fpt;
 }
 
+char* stringFromEnum(int f) {
+
+    char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
+    char * str = strings[f];
+    return strings[f];
+}
+
 double getArrival(double current) {
     
 
