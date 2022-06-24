@@ -71,7 +71,7 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-    printf("Enqueue\n");
+    //printf("Enqueue\n");
     printf("Type  of arrival %d\n",type); //External 6
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
@@ -83,16 +83,16 @@ void enqueue(block *block, double arrival, int type) {
 
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
         block->tail->next = j;
-        printf("Append to tail\n");
+        //printf("Append to tail\n");
     }else{
         block->head_service = j;
-         printf("Append to head\n");
+         //printf("Append to head\n");
     }
 
     block->tail = j;
 
     if (block->head_queue == NULL) {
-         printf("head queue null\n");
+        // printf("head queue null\n");
         block->head_queue = j;
     }
 }
@@ -100,7 +100,7 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
-    printf("Dequeue\n");
+    //printf("Dequeue\n");
     job *j = malloc(sizeof(job));
     j = (block_t->head_service);
     printf("Arrival %f\n",j->arrival);
@@ -147,6 +147,8 @@ void process_arrival() {
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
+        printf("GENERAZIONE PROCESSAMENTO\n");
+        printf("BLOCCO DI PROCESSAMENTO : %s\n", stringFromEnum(blocks[0].type));
         printf("Service time: %f\n", serviceTime);
         compl c = {s, INFINITY};
         s->block=&blocks[0];
@@ -182,6 +184,8 @@ void process_completion(compl c) {
     int type;
     int destination;
     server *freeServer;
+    printf("GENERAZIONE PROCESSAMENTO NEXT EVENT\n");
+    printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %d\n", block_type);
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
@@ -217,14 +221,13 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
+    printf("Destination: %s\n", stringFromEnum(destination));
     if (destination == EXIT) {
-        printf("job destinato all'uscita\n");
         blocks[block_type].total_dropped++;
         dropped++;
         return;
     }
     if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
-            printf("job destinato alla cloud unit\n");
             server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
@@ -239,7 +242,6 @@ void process_completion(compl c) {
             return;
     }
     if (destination != CLOUD_UNIT && destination != VIDEO_UNIT) {
-        printf("Destination: %d", destination);
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
         enqueue(&blocks[destination], c.value, INTERNAL);  // Posiziono il job nella coda del blocco destinazione e gli imposto come tempo di arrivo quello di completamento
@@ -267,7 +269,6 @@ void process_completion(compl c) {
     }
     //video unit - a perdita 
     if (destination==VIDEO_UNIT)  {
-        printf("Destinazione: Video Unit\n");
          blocks[destination].total_arrivals++;
          freeServer = findFreeServer(&blocks[destination]);
          if (freeServer != NULL) {
@@ -286,7 +287,7 @@ void process_completion(compl c) {
           return;
 
     } else { //LOSS
-        printf("Telecamera libera non disponibile\n");
+        printf("JOB BYPASSED FROM VIDEO UNIT\n");
         completed++;
         bypassed++;
         blocks[destination].total_bypassed++;
@@ -297,31 +298,25 @@ void process_completion(compl c) {
 
 // Ritorna il blocco destinazione di un job dopo il suo completamento
 int getDestination(enum block_types from, int type) {
-    printf("getdestination\n");
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
-                printf("Routing to Video Unit\n");
                 return VIDEO_UNIT;
             }
             else { //internal 
-                printf("Internal Routing\n"); 
-                return routing_from_control_unit();
+                int ret = routing_from_control_unit();
+                printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
+                return ret;
             }
         case VIDEO_UNIT:
-            printf("Routing to Control Unit\n");
             return CONTROL_UNIT;
         case WLAN_UNIT:
-            printf("Routing to Edge Unit\n");
             return EDGE_UNIT;
         case ENODE_UNIT:
-            printf("Routing to Edge Unit\n");
             return EDGE_UNIT;
         case EDGE_UNIT:
-            printf("Routing to Cloud Unit\n");
             return CLOUD_UNIT;
         case CLOUD_UNIT:
-            printf("Routing to Exit\n");
             return EXIT;
             break;
     }
@@ -332,16 +327,13 @@ int getDestination(enum block_types from, int type) {
 int routing_from_control_unit() {
 
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
-           printf("Routing to Enode from Control Unit\n");
            return ENODE_UNIT; 
         }      
    else {
        double random = Uniform(0, 1);
        if(random<=P_WLAN) {
-          printf("Routing to Wlan from Control Unit\n"); 
           return WLAN_UNIT;
        } else {
-          printf("Routing to Enode from Control Unit because Wlan is Off\n"); 
           return ENODE_UNIT;
        }
    }
