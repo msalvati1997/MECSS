@@ -68,8 +68,8 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-  //  printf("enqueue\n");
-    printf("type %d\n",type);
+    printf("enqueue\n");
+    printf("type %d\n",type); //External 6
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -95,7 +95,7 @@ void enqueue(block *block, double arrival, int type) {
 int dequeue(block *block_t) {
     printf("dequeue\n");
     job *j = malloc(sizeof(job));
-    j = &(block_t->head_service);
+    j = (block_t->head_service);
     printf("arrival %f\n",j->arrival);
     int type; 
     type=0;
@@ -140,21 +140,21 @@ void process_arrival() {
         printf("free server\n");
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         printf("after get service\n");
-        compl *c = malloc(sizeof(compl));
-        c->server=s;
-        c->value = clock.current + serviceTime;
-        printf("printf status %d\n", s->status);
+        compl c = {s, INFINITY};
+        s->block=&blocks[0];
+        c.server=s;
+        c.value = clock.current + serviceTime;
+        printf("printf type %d\n", blocks[0].type);
         s->status = BUSY;  // Setto stato busy
         printf("2 \n");
         s->sum.service += serviceTime;
-        printf("3 service time %f\n",s->sum.service);
-        block *block_s = s->block;
-        printf("num %ld\n", (block_s->num_servers));
+        //////////////////////////////////////////////
+        //printf("num server %f\n",(s->block)->num_servers);
         s->block->area.service += serviceTime;
         printf("4\n");
         s->sum.served++;
         printf("before insert sorted\n");
-        insertSorted(&global_sorted_completions, *c);
+        insertSorted(&global_sorted_completions, c);
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
         printf("not free\n");
@@ -358,6 +358,7 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
     if (completion.value == compls->sorted_list[mid].value) {
         return binarySearch(compls, (mid + 1), high, completion);
     }
+    printf("binary done");
     return binarySearch(compls, low, (mid - 1), completion);
 }
 
@@ -533,7 +534,7 @@ void reset_statistics() {
 
 
 
-//Calcola l'energia consumata dal sistema (capire come aggiornare variabili per ogni esecuzione)
+//Calcola l'energia consumata dal sistema (capire come aggiornare vari'abili per ogni esecuzione)
 int calculate_energy_consumption() {
 
 }
