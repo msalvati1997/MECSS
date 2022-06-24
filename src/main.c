@@ -70,7 +70,6 @@ double getService(int type_service, int stream) {
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block, double arrival, int type) {
-    printf("Enqueue\n");
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -81,16 +80,16 @@ void enqueue(block *block, double arrival, int type) {
 
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
         block->tail->next = j;
-        printf("Append to tail\n");
+       // printf("Append to tail\n");
     }else{
         block->head_service = j;
-         printf("Append to head\n");
+         //printf("Append to head\n");
     }
 
     block->tail = j;
 
     if (block->head_queue == NULL) {
-        printf("head queue null\n");
+       // printf("head queue null\n");
         block->head_queue = j;
     }
 }
@@ -98,32 +97,24 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
-    printf("Dequeue\n");
     job *j = malloc(sizeof(job));
     j = (block_t->head_service);
     //printf("Arrival %f\n",j->arrival);
     
     int type= j->type;
-    printf("Type of arrival: %d\n",j->type);
     if (!j->next) {
         block_t->tail = NULL;
     }
-    printf("before head\n");
     
     block_t->head_service = j->next;
-    printf("after head\n");
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
-        printf("Take next job of the queue\n");
         job* tmp = block_t->head_queue->next;
         
         block_t->head_queue = tmp;
-        printf("next job now\n");
     } else {
-        printf("No job in the queue\n");
         block_t->head_queue = NULL;
     }
     free(j);
-    printf("funziona\n");
     return type;
 }
 
@@ -139,12 +130,14 @@ server *findFreeServer(block *b) {
             return (*b->serv+i);
         }
     }
+    printf("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum((*b->serv)->block->type));
     return NULL;
 }
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
-    printf("Process arrival\n");
+    printf("------------------------------------------------\n\n");
+    printf("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
@@ -154,7 +147,7 @@ void process_arrival() {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         printf("GENERAZIONE PROCESSAMENTO\n");
         printf("BLOCCO DI PROCESSAMENTO : %s\n", stringFromEnum(blocks[0].type));
-        printf("Service time: %f\n", serviceTime);
+        //printf("Service time: %f\n", serviceTime);
         compl c = {s, INFINITY};
         s->block=&blocks[0];
         c.server=s;
@@ -168,11 +161,10 @@ void process_arrival() {
         s->block->area.service += serviceTime;
         //printf("Service time area: %f", s->block->area.service);
         s->sum.served++;
-        printf("served jobs: %ld\n", s->sum.served);
+       // printf("served jobs: %ld\n", s->sum.served);
         insertSorted(&global_sorted_completions, c);
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
     } else {
-        printf("Server free not found\n");
         enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
         blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
@@ -181,7 +173,7 @@ void process_arrival() {
 
 // Processa un next-event di completamento
 void process_completion(compl c) {
-    printf("Process completion \n");
+    printf("------------------------------------------------\n\n");
     block *block_ = (c.server)->block;
     int block_type = (block_)->type;
     blocks[block_type].total_completions++;
@@ -189,26 +181,25 @@ void process_completion(compl c) {
     int type;
     int destination;
     server *freeServer;
-    printf("GENERAZIONE PROCESSAMENTO NEXT EVENT\n");
-    printf("BLOCCO DI PROCESSAMENTO NEXT EVENT : %s\n", stringFromEnum(block_type));
+    printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    printf("tipo di job %d-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
+    //printf("tipo di job %d-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
-        printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
+        //printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
-        printf("Service time: %f\n", service_1);
+        //printf("Service time: %f\n", service_1);
         c.value = clock.current + service_1;
         c.server->sum.service += service_1;
         c.server->sum.served++;
         c.server->block->area.service += service_1;
         insertSorted(&global_sorted_completions, c);
-        printf("Generato prox completamento\n");
+        //printf("Generato prox completamento\n");
     } else {
-        printf("Job non presenti in coda\n");
+        //printf("Job non presenti in coda\n");
         c.server->status = IDLE;
     }
 
@@ -227,7 +218,7 @@ void process_completion(compl c) {
     }
 
     // Gestione blocco destinazione job interno
-    destination = getDestination(c.server->block->type,block_type);  // Trova la destinazione adatta per il job appena servito 
+    destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     printf("FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
@@ -240,7 +231,7 @@ void process_completion(compl c) {
             enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
-            printf("Service time: %f\n", service_2);
+           // printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
@@ -255,21 +246,18 @@ void process_completion(compl c) {
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(&blocks[destination]);
         if (freeServer != NULL) {
-            printf("Server libero trovato\n");
             compl c2 = {freeServer, INFINITY};
             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
-            printf("Service time: %f\n", service_2);
+            //printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
             freeServer->status = BUSY;
-            printf("stato cambiato in Busy\n");
             freeServer->sum.service += service_2;
             freeServer->sum.served++;
             freeServer->block->area.service += service_2;
             return;
         } else {
-            printf("Server libero non disponibile\n");
             blocks[destination].jobInQueue++; 
             return;
         }
@@ -279,16 +267,13 @@ void process_completion(compl c) {
          blocks[destination].total_arrivals++;
          freeServer = findFreeServer(&blocks[destination]);
          if (freeServer != NULL) {
-          printf("Server libero trovato per video unit \n");
           blocks[destination].jobInBlock++;
           enqueue(&blocks[destination], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
           double service_3 = getService(destination, freeServer->stream);
-          printf("Service time: %f\n", service_3);
           c3.value = clock.current + service_3;
           insertSorted(&global_sorted_completions, c3);
           freeServer->status = BUSY;
-          printf("Stato cambiato in busy\n");
           freeServer->sum.service += service_3;
           freeServer->sum.served++;
           freeServer->block->area.service += service_3;
@@ -311,7 +296,7 @@ int getDestination(enum block_types from, int type) {
             if(type==EXTERNAL) {  //external  
                 return VIDEO_UNIT;
             }
-            else { //internal 
+            if(type==INTERNAL) { //internal 
                 int ret = routing_from_control_unit();
                 printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
@@ -392,7 +377,6 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
     if (completion.value == compls->sorted_list[mid].value) {
         return binarySearch(compls, (mid + 1), high, completion);
     }
-    printf("binary done");
     return binarySearch(compls, low, (mid - 1), completion);
 }
 
@@ -435,17 +419,17 @@ void finite_horizon_run(int stop_time, int repetition) {
         server *nextCompletionServer = nextCompletion->server;
      
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-        printf("NextCompletion value : %f\n", nextCompletion->value);
-        printf("Arrival %f\n",clock.arrival);
+      //  printf("NextCompletion value : %f\n", nextCompletion->value);
+      //  printf("Arrival %f\n",clock.arrival);
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
-                printf("num job in block:%d\n",blocks[i].jobInBlock);
+               // printf("num job in block:%d\n",blocks[i].jobInBlock);
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
                 blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
-        printf("clock current : %f", clock.current);
+       // printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
             //printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
             printf("\n--------------------------------------------\n");
