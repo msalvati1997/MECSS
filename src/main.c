@@ -77,19 +77,21 @@ void enqueue(block *block, double arrival, int type) {
     j->arrival = arrival;
     j->next = NULL;
     j->type = type;
-
+    //printf("enqueue run\n");
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
+        //printf("Append to tail\n");
+        //block->tail->next = malloc(sizeof(job));
         block->tail->next = j;
-       // printf("Append to tail\n");
+        
     }else{
+        //printf("Append to head\n");
         block->head_service = j;
-         //printf("Append to head\n");
     }
-
+    
     block->tail = j;
 
     if (block->head_queue == NULL) {
-       // printf("head queue null\n");
+       //printf("head queue null\n");
         block->head_queue = j;
     }
 }
@@ -122,13 +124,13 @@ int dequeue(block *block_t) {
 server *findFreeServer(int block_type) {
     block * b = &blocks[block_type];
     int num = b->num_servers;
-    printf("num server %d\n", num);
-    printf("type %d\n", block_type);
+    //printf("num server %d\n", num);
+    //printf("type %d\n", block_type);
     for (int i = 0; i <  num; i++) {
         //printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
-        if((b->serv[i])->status==IDLE){
+        if((*b->serv+i)->status==IDLE){
             printf("SERVER IDLE FOUND IN %d - %s\n", b->type, stringFromEnum(b->type));
-            return b->serv[i];
+            return *b->serv+i;
         }
     }
     printf("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum(b->type));
@@ -232,11 +234,12 @@ void process_completion(compl c) {
             enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
-           // printf("Service time: %f\n", service_2);
+            //printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
-            cloud_server->block->area.service += service_2;
+            printf("eccomi\n");
+            cloud_server->block->area.service += service_2; //<------------------------------ RIGA DI ERRORE
             completed++;
             return;
     }
@@ -644,8 +647,9 @@ int initialize() {
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
+   
    video_unit=calloc(2,sizeof(server*));
-   (*video_unit)=calloc(1,sizeof(server));
+   (*video_unit)=calloc(2,sizeof(server));
    blocks[1].num_servers=2; //video 
 
    wlan_unit=calloc(2,sizeof(server*));
@@ -671,7 +675,7 @@ int initialize() {
    (*control_unit)->online=ONLINE;
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
-   streamID=streamID++;
+   streamID+=streamID;
    (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
   
@@ -684,7 +688,7 @@ int initialize() {
        (*video_unit+i)->stream=streamID++;
        (*video_unit+i)->block=malloc(sizeof(block));
        (*video_unit+i)->block=&blocks[1];  
-       streamID=streamID++;
+       streamID+=streamID;
    }
    blocks[1].type=1;
 
@@ -697,7 +701,7 @@ int initialize() {
          (*wlan_unit+i)->stream=streamID++;
          (*wlan_unit+i)->block=malloc(sizeof(block));
          (*wlan_unit+i)->block=&blocks[2];
-         streamID=streamID++;
+         streamID+=streamID;
    }
 
    (*enode_unit)->id=6;
@@ -707,7 +711,7 @@ int initialize() {
    (*enode_unit)->stream=streamID++;
    (*enode_unit)->block=malloc(sizeof(block));
    (*enode_unit)->block=&blocks[3];
-   streamID=streamID++;
+   streamID+=streamID;
    
    for(int i=0;i<blocks[4].num_servers;i++) {
           (*edge_unit+i)->id=i;
@@ -717,7 +721,7 @@ int initialize() {
           (*edge_unit+i)->stream=streamID++;
           (*edge_unit+i)->block=malloc(sizeof(block));
           (*edge_unit+i)->block=&blocks[4];
-          streamID=streamID++;
+          streamID+=streamID;
    }
 
    (*cloud_unit)->id=11;
