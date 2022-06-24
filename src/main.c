@@ -158,6 +158,7 @@ void process_arrival() {
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
+        printf("Service time: %f\n", serviceTime);
         compl c = {s, INFINITY};
         s->block=&blocks[0];
         c.server=s;
@@ -200,6 +201,7 @@ void process_completion(compl c) {
         printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
+        printf("Service time: %f", service_1);
         c.value = clock.current + service_1;
         c.server->sum.service += service_1;
         c.server->sum.served++;
@@ -239,6 +241,7 @@ void process_completion(compl c) {
             enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
+            printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
@@ -259,6 +262,7 @@ void process_completion(compl c) {
             compl c2 = {freeServer, INFINITY};
              enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
+            printf("Service time: %f\n", service_2);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
             freeServer->status = BUSY;
@@ -283,6 +287,7 @@ void process_completion(compl c) {
           enqueue(&blocks[destination], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
           double service_3 = getService(destination, freeServer->stream);
+          printf("Service time: %f\n", service_3);
           c3.value = clock.current + service_3;
           insertSorted(&global_sorted_completions, c3);
           freeServer->status = BUSY;
