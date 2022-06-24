@@ -367,6 +367,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     printf("delete element\n");
     int i;
     int n = compls->num_completions;
+    printf("n : %d\n",n);
 
     int pos = binarySearch(compls, 0, n - 1, completion);
 
@@ -544,11 +545,12 @@ int initialize() {
    printf("initialize\n");
    streamID=0;
    clock.current = START;
-   printf("clock current initialize %f\n", clock.current);
    completed = 0;
-   bypassed=0;
-
-
+   bypassed = 0;
+   dropped = 0;
+   global_sorted_completions.num_completions = 0;
+   printf("clock current initialize %f\n", clock.current);
+  
     for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
         blocks[block_type].type = block_type;
         blocks[block_type].jobInBlock = 0;
@@ -563,7 +565,6 @@ int initialize() {
    printf("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
-   insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
    blocks[0].num_servers=1; //control unit
 
    video_unit=calloc(2,sizeof(server*));
@@ -606,7 +607,6 @@ int initialize() {
        (*video_unit+i)->stream=streamID++;
        (*video_unit+i)->block=malloc(sizeof(block));
        (*video_unit+i)->block=&blocks[1];  
-       insertSorted(&global_sorted_completions, (compl){(*video_unit+i), INFINITY});
        streamID=streamID++;
    }
 
@@ -618,7 +618,6 @@ int initialize() {
          (*wlan_unit+i)->stream=streamID++;
          (*wlan_unit+i)->block=malloc(sizeof(block));
          (*wlan_unit+i)->block=&blocks[2];
-         insertSorted(&global_sorted_completions, (compl){(*wlan_unit+i), INFINITY});
          streamID=streamID++;
    }
 
@@ -629,7 +628,6 @@ int initialize() {
    (*enode_unit)->stream=streamID++;
    (*enode_unit)->block=malloc(sizeof(block));
    (*enode_unit)->block=&blocks[3];
-    insertSorted(&global_sorted_completions, (compl){(*enode_unit), INFINITY});
    streamID=streamID++;
    
    for(int i=0;i<blocks[4].num_servers;i++) {
@@ -640,7 +638,6 @@ int initialize() {
           (*edge_unit+i)->stream=streamID++;
           (*edge_unit+i)->block=malloc(sizeof(block));
           (*edge_unit+i)->block=&blocks[4];
-          insertSorted(&global_sorted_completions, (compl){(*edge_unit), INFINITY});
           streamID=streamID++;
    }
 
@@ -649,7 +646,6 @@ int initialize() {
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
-   insertSorted(&global_sorted_completions, (compl){(*cloud_unit), INFINITY});
    (*cloud_unit)->block=malloc(sizeof(block));
    (*cloud_unit)->block=&blocks[5];
 
@@ -666,6 +662,21 @@ int initialize() {
    blocks[5].serv = calloc(1,sizeof(cloud_unit));
    memcpy(blocks[5].serv, &cloud_unit, sizeof(cloud_unit));
    clock.arrival = getArrival(clock.current);
+
+
+   insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*video_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*video_unit+1), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*wlan_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*wlan_unit+1), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*enode_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*edge_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*edge_unit+1), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*edge_unit+2), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*edge_unit+3), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*cloud_unit), INFINITY});
+   global_sorted_completions.num_completions=0;
+
    printf("%f\n",clock.arrival);
    printf("finish initialized\n");
 }
