@@ -11,19 +11,11 @@
 
 /*@todo 
 COSE DA FARE:
-- decidere i tipi di job e implementare logica se diversi  (fatto)
-- implemetnare insertSorted  (simo)
-- implementare funzione delete element dalla lista sortata (simo)
-- implementare get destination  (ritorna blocco)  (marti)
-- funzione di routing from control unit to cloud   (marti)
-- funzione di intermittenza WLAN (thread separato) -> {need_resched,offline/online}
-/////////////////////////////////////////////////////////////////////
-- funzione resetta variabili 
-- aggiungere statistiche da fare 
 - funzione che calcola tempo totale teorico
 - funzione che calcola dispendio energetico teorico 
 - funzione che calcola tempo totale  
-- aggiungere funzione calcolo dispendio energetico 
+- aggiungere funzione calcolo dispendio energetico
+- aggiungere cambiamento seed ad ogni simulazione  
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
