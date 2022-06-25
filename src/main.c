@@ -89,11 +89,12 @@ void enqueue(block *block, double arrival, int type) {
     j->type = type;
     //printf("enqueue run\n");
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
-        printf("JOB PRESENTI  APPENDO ALLA CODA\n");
-        //block->tail->next = malloc(sizeof(job));
+        printf("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block->type));
+        block->tail->next = malloc(sizeof(job));
         block->tail->next = j; 
     }else{
-        printf("JOB NON PRESENTI - APPENDO IN TESTA\n");
+        printf("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block->type));
+        block->head_service=malloc(sizeof(job));
         block->head_service = j;
     }
     
@@ -108,22 +109,25 @@ void enqueue(block *block, double arrival, int type) {
 
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
+    job* tmp = malloc(sizeof(job));
     job *j = malloc(sizeof(job));
-    
-    j = block_t->head_service;
-    
-    int type= j->type;
-    if (!j->next) {
+    j=block_t->head_service;
+    printf("arrival %f\n",j->arrival); //<-------- problema- diventa 0.0000000000
+    int type= block_t->head_service->type;
+
+
+    if (j->next==NULL) {
         block_t->tail = NULL;
     }
     
-    block_t->head_service = j->next;
+    block_t->head_service = block_t->head_service->next;
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
-        job* tmp = block_t->head_queue->next;
+        tmp = block_t->head_queue->next;
         block_t->head_queue = tmp;
     } else {
         block_t->head_queue = NULL;
     }
+    free(tmp);
     free(j);
     return type;
 }
@@ -193,15 +197,16 @@ void process_completion(compl c) {
     int destination;
     server *freeServer;
     printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
-
+    printf("DIMINUISCO IL NUMERO DI JOB NEL BLOCCO IN QUANTO UN JOB VIENE SERVITO : jobInBlock= %d\n",blocks[block_type].jobInBlock);
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
-    printf("EFFETTUATO DEQUEUE DI UN JOB %s DALLA LISTA DI COMPLETAMENTI\n", stringFromEnum2(type));
+    printf("EFFETTUATO DEQUEUE DI UN JOB %s SERVITO DAL BLOCCO PER FAR AVANZARE LA LISTA\n", stringFromEnum2(type));
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
-        printf("N. JOB IN CODA: %d\n",blocks[block_type].jobInQueue);
+        printf("N. JOB IN CODA PRESENTI NEL BLOCCO %s: %d\n",stringFromEnum(block_type), blocks[block_type].jobInQueue);
         printf("QUINDI GENERO IL PROSSIMO COMPLETAMENTO\n");
         blocks[block_type].jobInQueue--;
+        printf("TOLGO UN JOB DALLA CODA E LO PROCESSO NEL BLOCCO\n");
         double service_1 = getService(block_type, c.server->stream);
         printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_1);
         c.value = clock.current + service_1;
@@ -233,9 +238,9 @@ void process_completion(compl c) {
         return;
     }
 
-    // Gestione blocco destinazione job interno
+    // Gestione blocco destinazione job 
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    printf("JOB DESTINATION : FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
+    //printf("JOB SERVITO ->       DESTINATION : FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -275,6 +280,7 @@ void process_completion(compl c) {
             freeServer->block->area.service += service_2;
             return;
         } else {
+            printf("NUMERO DI JOB IN CODA AUMENTA NEL BLOCCO %s\n", stringFromEnum(blocks[destination].type));
             blocks[destination].jobInQueue++; 
             return;
         }
@@ -312,11 +318,11 @@ int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
-                printf("JOB EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
+                printf("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
                 return VIDEO_UNIT;
             }
             if(type==INTERNAL) { //internal 
-                printf("JOB INTERNAL -> DIRECTED TO CLOUD\n");
+                printf("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
                 int ret = routing_from_control_unit();
                 printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
