@@ -113,48 +113,36 @@ void printQUeue(job *j) {
         printJobInfo(tmp);
     }
 }
-// Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
-int dequeue(block *block_t) {
-    job* tmp = malloc(sizeof(job));
-    job *j = malloc(sizeof(job));
-    j=block_t->head_service;
-    int type= block_t->head_service->type;
+
+// Rimuove il job dalla coda del blocco specificata
+int dequeue(block *block) {
+    job *j = block->head_service;
     printf("PRINT QUEUE BEFORE DEQUEUE\n");
-    printQUeue(block_t->head_queue);
+    printQUeue(block->head_queue);
+    int type = j->type;
 
-    if (j->next==NULL) {
-        block_t->tail = NULL;
-    }
-    
-    block_t->head_service = block_t->head_service->next;
-    if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
-        tmp = block_t->head_queue->next;
-        block_t->head_queue = tmp;
+    if (!j->next)
+        block->tail = NULL;
+
+    block->head_service = j->next;
+
+    if (block->head_queue != NULL && block->head_queue->next != NULL) {
+        job *tmp = block->head_queue->next;
+        block->head_queue = tmp;
         printf("PRINT QUEUE AFTER DEQUEUE\n");
-        printQUeue(block_t->head_queue);
+        printQUeue(block->head_queue);
     } else {
-        block_t->head_queue = NULL;
-        printf("QUEUE EMPTY AFTER DEQUEUE\n");
+        block->head_queue = NULL;
+        printf("EMPTY QUEUE\n");
     }
 
-    
-    free(tmp);
-    free(j);
+  
     return type;
 }
 
 
-void printJobInfo(job * j) {
-    job *jn = (job *)malloc(sizeof(job));
-    if(j->arrival==0.0) {
-        printf("NO JOB IN QUEUE1\n");
-    }
-    if(j->next==NULL) {
-      printf("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
-    }else {
-        jn = j->next;
-        printf("---------> [JOB : ARRIVO %f, NEXT={ARRIVAL :%f , TYPE : %s}, TYPE : %s ]\n", j->arrival,jn->arrival, stringFromEnum2(jn->type) , stringFromEnum2(j->type));
-    }
+void printJobInfo(job * j) {  
+    printf("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
 }
 
 // Ritorna il primo server libero nel blocco specificato
@@ -223,6 +211,7 @@ void process_completion(compl c) {
     server *freeServer;
     printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
     printf("DIMINUISCO IL NUMERO DI JOB NEL BLOCCO IN QUANTO UN JOB VIENE SERVITO : jobInBlock= %d\n",blocks[block_type].jobInBlock);
+    
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
     printf("EFFETTUATO DEQUEUE DI UN JOB %s SERVITO DAL BLOCCO PER FAR AVANZARE LA LISTA\n", stringFromEnum2(type));
@@ -265,6 +254,7 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job 
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
+    blocks[destination].total_arrivals++;
     //printf("JOB SERVITO ->       DESTINATION : FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
@@ -316,7 +306,7 @@ void process_completion(compl c) {
          freeServer = findFreeServer(destination);
          if (freeServer != NULL) {
           blocks[destination].jobInBlock++;
-          enqueue(&blocks[VIDEO_UNIT], c.value,INTERNAL);
+          enqueue(&blocks[destination], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
           double service_3 = getService(destination, freeServer->stream);
           printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_3);
@@ -336,6 +326,7 @@ void process_completion(compl c) {
         return;
     }
     }
+    
 }
 
 // Ritorna il blocco destinazione di un job dopo il suo completamento
