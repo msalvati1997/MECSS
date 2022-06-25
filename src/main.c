@@ -257,7 +257,7 @@ void process_completion(compl c) {
             compl c2 = {cloud_server, INFINITY};
             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
-            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(block_type) ,service_2);
+            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_2);
             c2.value = clock.current + service_2;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
@@ -275,7 +275,7 @@ void process_completion(compl c) {
             freeServer->block=&blocks[destination];
             compl c3 = {freeServer, INFINITY};
             double service_3 = getService(destination, freeServer->stream);
-            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(block_type) ,service_3);
+            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
             c3.server=freeServer;
             c3.value = clock.current + service_3;
             freeServer->status = BUSY;
