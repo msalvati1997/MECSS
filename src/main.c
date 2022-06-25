@@ -89,12 +89,11 @@ void enqueue(block *block, double arrival, int type) {
     j->type = type;
     //printf("enqueue run\n");
     if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
-        //printf("Append to tail\n");
+        printf("JOB PRESENTI  APPENDO ALLA CODA\n");
         //block->tail->next = malloc(sizeof(job));
-        block->tail->next = j;
-        
+        block->tail->next = j; 
     }else{
-        //printf("Append to head\n");
+        printf("JOB NON PRESENTI - APPENDO IN TESTA\n");
         block->head_service = j;
     }
     
@@ -110,8 +109,8 @@ void enqueue(block *block, double arrival, int type) {
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
     job *j = malloc(sizeof(job));
-    j = (block_t->head_service);
-    //printf("Arrival %f\n",j->arrival);
+    
+    j = block_t->head_service;
     
     int type= j->type;
     if (!j->next) {
@@ -121,7 +120,6 @@ int dequeue(block *block_t) {
     block_t->head_service = j->next;
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
         job* tmp = block_t->head_queue->next;
-        
         block_t->head_queue = tmp;
     } else {
         block_t->head_queue = NULL;
@@ -149,7 +147,7 @@ server *findFreeServer(int block_type) {
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
-    printf("------------------------------------------------\n\n");
+    print_line();
     printf("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
@@ -186,7 +184,7 @@ void process_arrival() {
 
 // Processa un next-event di completamento
 void process_completion(compl c) {
-    printf("------------------------------------------------\n\n");
+    print_line();
     block *block_ = (c.server)->block;
     int block_type = (block_)->type;
     blocks[block_type].total_completions++;
@@ -198,9 +196,11 @@ void process_completion(compl c) {
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
+    printf("EFFETTUATO DEQUEUE DI UN JOB %s DALLA LISTA DI COMPLETAMENTI\n", stringFromEnum2(type));
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         printf("N. JOB IN CODA: %d\n",blocks[block_type].jobInQueue);
+        printf("QUINDI GENERO IL PROSSIMO COMPLETAMENTO\n");
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
         printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_1);
@@ -209,7 +209,6 @@ void process_completion(compl c) {
         c.server->sum.served++;
         c.server->block->area.service += service_1;
         insertSorted(&global_sorted_completions, c);
-        //printf("Generato prox completamento\n");
     } else {
         if(block_type==CLOUD_UNIT) {
             printf("CLOUD NON HA CODA - E' UN M/M/INF\n");
@@ -236,7 +235,7 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job interno
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    printf("FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
+    printf("JOB DESTINATION : FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -436,15 +435,16 @@ void finite_horizon_run(int stop_time, int repetition) {
     printf("Stop time %d\n",stop_time);
     int n = 1;
     while (clock.arrival <= stop_time) {
+        print_line();
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
      
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-      //  printf("NextCompletion value : %f\n", nextCompletion->value);
-      //  printf("Arrival %f\n",clock.arrival);
+        printf("OTTENUTO PROSSIMO EVENTO DALLA SORTED LIST -> %f\n", nextCompletion->value);
+        printf("NUMERO JOB PRESENTI NEL SISTEMA  : \n");
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
-               // printf("num job in block:%d\n",blocks[i].jobInBlock);
+                printf(" ->       JOB PRESENTI NEL BLOCCO %s : %d\n", stringFromEnum(blocks[i].type) , blocks[i].jobInBlock);
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
                 blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
             }
@@ -452,11 +452,8 @@ void finite_horizon_run(int stop_time, int repetition) {
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
        // printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
-            //printf("process arrival finite horizon - clock.current %f = clock.arrival %f \n", clock.current, clock.arrival);
-            printf("\n--------------------------------------------\n");
             process_arrival();
         } else {
-            printf("\n--------------------------------------------\n");
             process_completion(*nextCompletion);
         }
         if (clock.current >= (n - 1) * 30 && clock.current < (n)*30 && completed > 16 && clock.arrival < stop_time) {
@@ -468,6 +465,7 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calculate statistic finali
    calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
+  print_line();
    printf("fine\n");
 }
 
@@ -487,9 +485,9 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 
 // Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
-    printf("calculate staticts clock\n");
-    printf("---------------------------------------------------------------\n");
+        print_line();
 
+    printf("calculate staticts clock\n");
     char filename[100];
     snprintf(filename, 100, "continuos_finite.csv");
     FILE *csv;

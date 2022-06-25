@@ -21,7 +21,10 @@ double E(int c, double a)
     return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
 }
 
-
+// Stampa a schermo una linea di separazione
+void print_line() {
+    printf("\n————————————————————————————————————————————————————————————————————————————————————————\n");
+}
 // Apre un csv in modalità append
 FILE *open_csv_appendMode(char *filename) {
     FILE *fpt;
