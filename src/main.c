@@ -29,7 +29,6 @@ FILE *open_csv(char *filename) {
 char* stringFromEnum(int f) {
 
     char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
-    char * str = strings[f];
     return strings[f];
 }
 
@@ -60,8 +59,7 @@ double getService(int type_service, int stream) {
 
     switch (type_service) {
         case 0:
-
-            return  Exponential(CONTROL_UNIT_SERVICE_TIME);
+            return Exponential(CONTROL_UNIT_SERVICE_TIME);
         case 1:
             return Exponential(VIDEO_SERVICE_TIME);
         case 2:
@@ -79,7 +77,7 @@ double getService(int type_service, int stream) {
 }
 
 // Inserisce un job nella coda del blocco specificata
-void enqueue(block *block, double arrival, int type) {
+void enqueue(block *block_t, double arrival, int type) {
     job *j = (job *)malloc(sizeof(job));
     if (j == NULL)
         handle_error("malloc");
@@ -87,34 +85,42 @@ void enqueue(block *block, double arrival, int type) {
     j->arrival = arrival;
     j->next = NULL;
     j->type = type;
-    //printf("enqueue run\n");
-    if (block->tail){  // Appendi alla coda se esiste, altrimenti è la testa
-        printf("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block->type));
-        block->tail->next = malloc(sizeof(job));
-        block->tail->next = j; 
+    if (block_t->tail){  // Appendi alla coda se esiste, altrimenti è la testa
+        printf("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block_t->type));
+        block_t->tail->next = malloc(sizeof(job));
+        block_t->tail->next = j; 
     }else{
-        printf("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block->type));
-        block->head_service=malloc(sizeof(job));
-        block->head_service = j;
+        printf("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block_t->type));
+        block_t->head_service=malloc(sizeof(job));
+        block_t->head_service = j;
     }
     
-    block->tail = j;
+    block_t->tail = j;
 
-    if (block->head_queue == NULL) {
-       //printf("head queue null\n");
-        block->head_queue = j;
+    if (block_t->head_queue == NULL) {
+        block_t->head_queue = j;
     }
+    printf("PRINT QUEUE AFTER ENQUEUE\n");
+    printQUeue(block_t->head_queue);
 }
 
-
+void printQUeue(job *j) {
+    job *tmp = (job *)malloc(sizeof(job));
+    tmp=j;
+    printJobInfo(tmp);
+    while(tmp->next!=NULL) {
+        tmp = tmp->next;
+        printJobInfo(tmp);
+    }
+}
 // Rimuove il job dalla coda del blocco specificata, ritorna tipo di job
 int dequeue(block *block_t) {
     job* tmp = malloc(sizeof(job));
     job *j = malloc(sizeof(job));
     j=block_t->head_service;
-    printf("arrival %f\n",j->arrival); //<-------- problema- diventa 0.0000000000
     int type= block_t->head_service->type;
-
+    printf("PRINT QUEUE BEFORE DEQUEUE\n");
+    printQUeue(block_t->head_queue);
 
     if (j->next==NULL) {
         block_t->tail = NULL;
@@ -124,12 +130,31 @@ int dequeue(block *block_t) {
     if (block_t->head_queue != NULL && block_t->head_queue->next != NULL) {
         tmp = block_t->head_queue->next;
         block_t->head_queue = tmp;
+        printf("PRINT QUEUE AFTER DEQUEUE\n");
+        printQUeue(block_t->head_queue);
     } else {
         block_t->head_queue = NULL;
+        printf("QUEUE EMPTY AFTER DEQUEUE\n");
     }
+
+    
     free(tmp);
     free(j);
     return type;
+}
+
+
+void printJobInfo(job * j) {
+    job *jn = (job *)malloc(sizeof(job));
+    if(j->arrival==0.0) {
+        printf("NO JOB IN QUEUE1\n");
+    }
+    if(j->next==NULL) {
+      printf("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
+    }else {
+        jn = j->next;
+        printf("---------> [JOB : ARRIVO %f, NEXT={ARRIVAL :%f , TYPE : %s}, TYPE : %s ]\n", j->arrival,jn->arrival, stringFromEnum2(jn->type) , stringFromEnum2(j->type));
+    }
 }
 
 // Ritorna il primo server libero nel blocco specificato
@@ -326,6 +351,8 @@ int getDestination(enum block_types from, int type) {
                 int ret = routing_from_control_unit();
                 printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
+            } else {
+                return NULL;
             }
         case VIDEO_UNIT:
             return CONTROL_UNIT;
