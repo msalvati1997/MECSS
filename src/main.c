@@ -201,10 +201,8 @@ void process_completion(compl c) {
     server *freeServer;
     printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
     printf("DIMINUISCO IL NUMERO DI JOB NEL BLOCCO IN QUANTO UN JOB VIENE SERVITO : jobInBlock= %d\n",blocks[block_type].jobInBlock);
-    
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
-    printf("EFFETTUATO DEQUEUE DI UN JOB %s SERVITO DAL BLOCCO PER FAR AVANZARE LA LISTA\n", stringFromEnum2(type));
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
         printf("N. JOB IN CODA PRESENTI NEL BLOCCO %s: %d\n",stringFromEnum(block_type), blocks[block_type].jobInQueue);
@@ -219,8 +217,13 @@ void process_completion(compl c) {
         c.server->block->area.service += service_1;
         insertSorted(&global_sorted_completions, c);
     } else {
-        if(block_type==CLOUD_UNIT) {
+        if(block_type==CLOUD_UNIT && !c.server->need_resched) {
             printf("CLOUD NON HA CODA - E' UN M/M/INF\n");
+            c.server->status=IDLE;
+        }
+        if(block_type==VIDEO_UNIT && !c.server->need_resched) {
+            printf("VIDEO UNIT NON HA CODA\n");
+            c.server->status=IDLE;
         }
         else {
           printf("JOB NON PRESENTI IN CODA - STATUS TO IDLE\n");
@@ -245,7 +248,7 @@ void process_completion(compl c) {
     // Gestione blocco destinazione job 
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     blocks[destination].total_arrivals++;
-    //printf("JOB SERVITO ->       DESTINATION : FROM %s TO DESTINATION: %s\n", stringFromEnum(block_type), stringFromEnum(destination));
+    printf("FROM %s TO %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -254,19 +257,20 @@ void process_completion(compl c) {
     if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
             server * cloud_server = *(blocks[CLOUD_UNIT].serv);
             blocks[destination].jobInBlock++;
-            compl c2 = {cloud_server, INFINITY};
             enqueue(&blocks[destination], c.value,INTERNAL);
+            compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
             printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_2);
             c2.value = clock.current + service_2;
+            c2.server=cloud_server;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
-            insertSorted(&global_sorted_completions, c2);
             cloud_server->block->area.service += service_2; 
-            completed++;
+            insertSorted(&global_sorted_completions, c2);
             return;
     }
     if (destination != CLOUD_UNIT) {
+        enqueue(&blocks[destination], c.value,INTERNAL);
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
@@ -283,7 +287,6 @@ void process_completion(compl c) {
             freeServer->sum.served++;
             freeServer->block->area.service += service_3;
             insertSorted(&global_sorted_completions, c3);
-             enqueue(&blocks[destination], c.value,INTERNAL);
             return;
         } else {
             if(destination==VIDEO_UNIT) {
@@ -537,10 +540,8 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
 
 // Stampa a schermo le statistiche calcolate per ogni singolo blocco
 void print_statistics(block blocks[], double currentClock) {
-    char type[20];
     double system_total_wait = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
-        strcpy(type, stringFromEnum(blocks[i].type));
 
         int arr = blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
@@ -553,7 +554,7 @@ void print_statistics(block blocks[], double currentClock) {
 
         system_total_wait += wait;
 
-        printf("\n\n======== Result for block %s ========\n", type);
+        printf("\n\n======== Result for block %s ========\n", stringFromEnum(blocks[i].type));
         printf("Number of Servers ................... = %d\n",blocks[i].num_servers);
         printf("Arrivals ............................ = %d\n", arr);
         printf("Completions.......................... = %d\n", blocks[i].total_completions);
@@ -574,8 +575,9 @@ void print_statistics(block blocks[], double currentClock) {
         printf("\n    server     utilization     avg service\n");
         double p = 0;
         int n = 0;
+        server **server_list = blocks[i].serv;
         for (int j = 0; j < blocks[i].num_servers; j++) {
-            server *s = *(blocks[i].serv+j);
+            server *s = *(server_list+j);
             printf("%8d %15.5f %15.2f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
             p += s->sum.service / currentClock;
             n++;
