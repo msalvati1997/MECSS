@@ -427,6 +427,16 @@ int deleteElement(sorted_completions *compls, compl completion) {
 double my_min(double x, double y) {
     return (x < y) ? x : y;
 }
+
+void print_sorted_list() {
+    printf("PRINT DELLA SORTED LIST DI COMPLETAMENTI\n");
+    for(int i=0;i<global_sorted_completions.num_completions;i++) {
+        compl *nextCompletion = &global_sorted_completions.sorted_list[i];
+        server *nextCompletionServer = nextCompletion->server;
+        printf("[BLOCCO : %s, TIME : %f], ",stringFromEnum(nextCompletionServer->block->type),nextCompletion->value );
+    }
+    printf("\n");
+}
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
     printf("Method : Finite horizon run\n");
@@ -434,9 +444,10 @@ void finite_horizon_run(int stop_time, int repetition) {
     int n = 1;
     while (clock.arrival <= stop_time) {
         print_line();
+        print_sorted_list();
         compl *nextCompletion = &global_sorted_completions.sorted_list[0];
         server *nextCompletionServer = nextCompletion->server;
-     
+    
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
         printf("OTTENUTO PROSSIMO EVENTO DALLA SORTED LIST -> %f\n", clock.next);
         if(clock.next==clock.arrival) {
