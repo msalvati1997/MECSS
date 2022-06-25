@@ -133,7 +133,7 @@ int dequeue(block *block) {
         printQUeue(block->head_queue);
     } else {
         block->head_queue = NULL;
-        printf("EMPTY QUEUE\n");
+        printf("--------->EMPTY QUEUE\n");
     }
 
   
