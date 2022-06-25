@@ -33,13 +33,23 @@ char* stringFromEnum(int f) {
     return strings[f];
 }
 
+
+char* stringFromEnum2(int f) {
+    if(f==6) {
+        return "EXTERNAL";
+    } else {
+        return "INTERNAL";
+    }
+    return "";
+}
+
 double getArrival(double current) {
     
 
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1 / ARRIVAL_RATE);
-    printf("Arrival value: %f\n", arrival);
+    printf("GENERATO ARRIVO : : %f s\n", arrival);
     return arrival;
 }
 
@@ -150,13 +160,13 @@ void process_arrival() {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         printf("GENERAZIONE PROCESSAMENTO\n");
         printf("BLOCCO DI PROCESSAMENTO : %s\n", stringFromEnum(blocks[0].type));
-        //printf("Service time: %f\n", serviceTime);
+        printf("SERVICE TIME GENERATED: %f\n", serviceTime);
         compl c = {s, INFINITY};
         s->block=&blocks[0];
         c.server=s;
         c.value = clock.current + serviceTime;
         s->status = BUSY;  // Setto stato busy
-        //printf("Stato cambiato in Busy\n");
+        printf("CHANGE STATUS IN BUSY\n");
         s->sum.service += serviceTime;
         //printf("Service time sum: %f", s->sum.service);
         //////////////////////////////////////////////
@@ -187,14 +197,13 @@ void process_completion(compl c) {
     printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
 
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
-    //printf("tipo di job %d-  tipo di blocco %s\n ",type, stringFromEnum(block_type));
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
-        //printf("Job presenti in coda: %d\n",blocks[block_type].jobInQueue);
+        printf("N. JOB IN CODA: %d\n",blocks[block_type].jobInQueue);
         blocks[block_type].jobInQueue--;
         double service_1 = getService(block_type, c.server->stream);
-        //printf("Service time: %f\n", service_1);
+        printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_1);
         c.value = clock.current + service_1;
         c.server->sum.service += service_1;
         c.server->sum.served++;
@@ -202,20 +211,25 @@ void process_completion(compl c) {
         insertSorted(&global_sorted_completions, c);
         //printf("Generato prox completamento\n");
     } else {
-        //printf("Job non presenti in coda\n");
-        c.server->status = IDLE;
+        if(block_type==CLOUD_UNIT) {
+            printf("CLOUD NON HA CODA - E' UN M/M/INF\n");
+        }
+        else {
+          printf("JOB NON PRESENTI IN CODA - STATUS TO IDLE\n");
+           c.server->status = IDLE;
+        }
     }
 
     // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
     if (c.server->need_resched) {
-        printf("server schedulato per la terminazione\n"); 
+        printf("-------SERVER SCHEDULATO PER LA TERMINAZIONE ----------\n"); 
         c.server->online = OFFLINE;
         c.server->need_resched = false;
     }
 
     //uscita dalla rete se il job esce dal CLOUD
     if (block_type == CLOUD_UNIT) {
-        printf("Job esce dalla rete\n");
+        printf("-----------JOB EXIT FROM CLOUD----------------\n");
         completed++;
         return;
     }
@@ -229,17 +243,17 @@ void process_completion(compl c) {
         return;
     }
     if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
-            server * cloud_server = *(&blocks[CLOUD_UNIT].serv);
+            server * cloud_server = *(blocks[CLOUD_UNIT].serv);
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
-            //printf("Service time: %f\n", service_2);
+            printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_2);
             c2.value = clock.current + service_2;
             cloud_server->sum.service += service_2;
             cloud_server->sum.served++;
-            printf("eccomi\n");
-            cloud_server->block->area.service += service_2; //<------------------------------ RIGA DI ERRORE
+            insertSorted(&global_sorted_completions, c2);
+            cloud_server->block->area.service += service_2; 
             completed++;
             return;
     }
@@ -253,7 +267,7 @@ void process_completion(compl c) {
             compl c2 = {freeServer, INFINITY};
             enqueue(&blocks[destination], c.value,INTERNAL);
             double service_2 = getService(destination, freeServer->stream);
-            //printf("Service time: %f\n", service_2);
+            printf("TEMPO DI PROCESSAMENTO GENERATO : %f\n", service_2);
             c2.value = clock.current + service_2;
             insertSorted(&global_sorted_completions, c2);
             freeServer->status = BUSY;
@@ -274,9 +288,8 @@ void process_completion(compl c) {
           blocks[destination].jobInBlock++;
           enqueue(&blocks[VIDEO_UNIT], c.value,INTERNAL);
           compl c3 = {freeServer, INFINITY};
-          printf("before get service\n");
           double service_3 = getService(destination, freeServer->stream);
-           printf("before after servicen\n");
+          printf("TEMPO DI PROCESSAMENTO GENERATO: %f\n", service_3);
           c3.value = clock.current + service_3;
           insertSorted(&global_sorted_completions, c3);
           freeServer->status = BUSY;
@@ -300,9 +313,11 @@ int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
+                printf("JOB EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
                 return VIDEO_UNIT;
             }
             if(type==INTERNAL) { //internal 
+                printf("JOB INTERNAL -> DIRECTED TO CLOUD\n");
                 int ret = routing_from_control_unit();
                 printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
@@ -324,7 +339,7 @@ int getDestination(enum block_types from, int type) {
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
 int routing_from_control_unit() {
-
+   intermittent_wlan();
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
            return ENODE_UNIT; 
         }      
@@ -340,14 +355,14 @@ int routing_from_control_unit() {
 
 //Thread che disattiva la WLAN essendo un server intermittente 
 int intermittent_wlan() {
-    printf("intermittent wlan\n");
+    printf("INTERMITTENT WLAN\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
-        printf("wlan off\n");
+        printf("WLAN OFF\n");
         (*wlan_unit)->need_resched=true;
         (*wlan_unit+1)->need_resched=true;
     } else {
-        printf("wlan on\n");
+        printf("WLAN ON\n");
         (*wlan_unit)->need_resched=false;
         (*wlan_unit+1)->need_resched=false;
         (*wlan_unit)->online=ONLINE;
