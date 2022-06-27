@@ -45,7 +45,7 @@ char* stringFromEnum2(int f) {
 double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
-    arrival += Exponential(ARRIVAL_RATE);
+    arrival += Exponential(1/INTERARRIVAL_TIME);
     printf("GENERATO NUOVO ARRIVO : %f s\n", arrival);
     return arrival;
 }

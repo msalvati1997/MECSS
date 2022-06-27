@@ -1,3 +1,6 @@
 print.txt
 a.out
 out
+.vscode/configurationCache.log
+.vscode/dryrun.log
+.vscode/settings.json
