@@ -3,11 +3,11 @@
 #define NUM_BLOCKS 6
 #define NUM_METRICS 2
 #define START 0.0
-#define STOP  365.0 * 24.0 * 60.0 * 60.0
+#define STOP  20.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
 #define WLAN_P 0.11
-#define INTERARRIVAL_TIME 250.0
+#define INTERARRIVAL_TIME 170.0
 
 #define TH_CONTROL_UNIT 109.8873675
 #define TH_VIDEO 49.8873675
@@ -17,7 +17,7 @@
 #define TH_CLOUD TH_EDGE
 
 //services time 
-#define CONTROL_UNIT_SERVICE_TIME 0.0113674698
+#define CONTROL_UNIT_SERVICE_TIME 0.0113674698/2
 #define VIDEO_SERVICE_TIME  0.014515384  //acquisizione di un frame da video service
 #define WLAN_FRAME_UPLOAD_TIME  0.0629 
 #define ENODE_FRAME_UPLOAD_TIME 0.1887

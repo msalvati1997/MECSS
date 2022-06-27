@@ -17,11 +17,8 @@
 
 /*@todo 
 COSE DA FARE:
-- funzione che calcola tempo totale teorico
 - funzione che calcola dispendio energetico teorico 
-- funzione che calcola tempo totale  
 - aggiungere funzione calcolo dispendio energetico
-- aggiungere cambiamento seed ad ogni simulazione  
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
@@ -360,7 +357,6 @@ void process_completion(compl c) {
 
     // Gestione blocco destinazione job 
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
-    blocks[destination].total_arrivals++;
     DEBUG_PRINT("FROM %s TO %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
@@ -368,6 +364,7 @@ void process_completion(compl c) {
         return;
     }
     if (destination == CLOUD_UNIT) { //M/M/INF non accoda mai, come se i server fossero sempre liberi
+            blocks[destination].total_arrivals++;
             server * cloud_server = *(blocks[CLOUD_UNIT].serv);
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
@@ -383,8 +380,8 @@ void process_completion(compl c) {
             return;
     }
     if (destination != CLOUD_UNIT && destination != VIDEO_UNIT) {
-        enqueue(&blocks[destination], c.value,INTERNAL);
         blocks[destination].total_arrivals++;
+        enqueue(&blocks[destination], c.value,INTERNAL);
         blocks[destination].jobInBlock++;
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(destination);
@@ -408,10 +405,10 @@ void process_completion(compl c) {
             }
         }
      if(destination == VIDEO_UNIT) {
-        blocks[destination].total_arrivals++;
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
         freeServer = findFreeServer(destination);
         if (freeServer != NULL) {
+            blocks[destination].total_arrivals++;
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
             freeServer->block=&blocks[destination];
@@ -428,7 +425,6 @@ void process_completion(compl c) {
             return;
         } else {
                  DEBUG_PRINT("JOB BYPASSED FROM VIDEO UNIT\n");
-                 completed++;
                  bypassed++;
                  blocks[destination].total_bypassed++;
                  return;
