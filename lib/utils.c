@@ -11,12 +11,6 @@
 //=   - Input is c = number of servers and a = total offered load           =
 //=   - Output returned is Erlang-B blocking probability                    =
 //===========================================================================
-<<<<<<< HEAD
-=======
-void print_line();
-void *append_on_csv(FILE *fpt, double ts);
-void *append_on_csv_v2(FILE *fpt, double ts, double p);
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
 
 double E(int c, double a)
 {

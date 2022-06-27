@@ -28,6 +28,7 @@ struct clock_t clock;                          // Mantiene le informazioni sul c
 ///////////////////////////////////////////////////////////////////////////////////////
 
 //FUNCTIONS
+/*
 char* stringFromEnum(int f);
 char* stringFromEnum2(int f);
 void printJobInfo(job * j);
@@ -61,7 +62,7 @@ void initialize();
 void write_rt_csv_finite();
 void *append_on_csv(FILE *fpt, double ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
-
+*/
 char* stringFromEnum(int f) {
 
     char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
@@ -79,7 +80,7 @@ char* stringFromEnum2(int f) {
 }
 
 void printJobInfo(job * j) {  
-    printf("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
+    DEBUG_PRINT("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
 }
 
 // Inserisce un elemento nella lista ordinata
@@ -96,39 +97,18 @@ int insertSorted(sorted_completions *compls, compl completion) {
     return (n + 1);
 }
 
-// Function to delete an element
-int deleteElement(sorted_completions *compls, compl completion) {
-    int i;
-    int n = compls->num_completions;
-    int pos = binarySearch(compls, 0, n - 1, completion);
-
-    if (pos == -1) {
-        printf("Element not found\n");
-        return n;
-    }
-
-    // Deleting element
-    for (i = pos; i < n; i++) {
-        compls->sorted_list[i] = compls->sorted_list[i + 1];
-    }
-    compls->sorted_list[n - 1].value = INFINITY;
-    compls->num_completions--;
-
-    return n - 1;
-}
-
 // Ritorna il blocco destinazione di un job dopo il suo completamento
 int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
-                printf("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
+                DEBUG_PRINT("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
                 return VIDEO_UNIT;
             }
             if(type==INTERNAL) { //internal 
-                printf("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
+                DEBUG_PRINT("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
                 int ret = routing_from_control_unit();
-                printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
+                DEBUG_PRINT("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
             } else {
                 return -1;
@@ -148,45 +128,10 @@ int getDestination(enum block_types from, int type) {
     return -1;
 }
 
-//Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
-//logica del dispatcher
-int routing_from_control_unit() {
-   intermittent_wlan();
-   if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
-           return ENODE_UNIT; 
-        }      
-   else {
-       double random = Uniform(0, 1);
-       if(random<=P_WLAN) {
-          return WLAN_UNIT;
-       } else {
-          return ENODE_UNIT;
-       }
-   }
-}
-
-//Thread che disattiva la WLAN essendo un server intermittente 
-void intermittent_wlan() {
-    printf("INTERMITTENT WLAN\n");
-    double random = Uniform(0,1);
-    if(random<=P_OFF_WLAN) {
-        printf("WLAN OFF\n");
-        (*wlan_unit)->need_resched=true;
-        (*wlan_unit+1)->need_resched=true;
-    } else {
-        printf("WLAN ON\n");
-        (*wlan_unit)->need_resched=false;
-        (*wlan_unit+1)->need_resched=false;
-        (*wlan_unit)->online=ONLINE;
-        (*wlan_unit+1)->online=ONLINE;
-    }
-}
-
 
 
 // Ricerca binaria di un elemento su una lista ordinata
 int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
-    //printf("binary search\n");
     if (high < low) {
         return -1;
     }
@@ -270,13 +215,8 @@ void enqueue(block *block_t, double arrival, int type) {
     if (block_t->head_queue == NULL) {
         block_t->head_queue = j;
     }
-<<<<<<< HEAD
     DEBUG_PRINT("PRINT QUEUE AFTER ENQUEUE\n");
-    printQUeue(block_t->head_queue);
-=======
-   // printf("PRINT QUEUE AFTER ENQUEUE\n");
-   // printQueue(block_t->head_queue);
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
+    printQueue(block_t->head_queue);
 }
 
 void printQueue(job *j) {
@@ -292,13 +232,8 @@ void printQueue(job *j) {
 // Rimuove il job dalla coda del blocco specificata
 int dequeue(block *block) {
     job *j = block->head_service;
-<<<<<<< HEAD
     DEBUG_PRINT("PRINT QUEUE BEFORE DEQUEUE\n");
-    printQUeue(block->head_queue);
-=======
-   // printf("PRINT QUEUE BEFORE DEQUEUE\n");
-   // printQueue(block->head_queue);
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
+    printQueue(block->head_queue);
     int type = j->type;
 
     if (!j->next)
@@ -309,13 +244,8 @@ int dequeue(block *block) {
     if (block->head_queue != NULL && block->head_queue->next != NULL) {
         job *tmp = block->head_queue->next;
         block->head_queue = tmp;
-<<<<<<< HEAD
         DEBUG_PRINT("PRINT QUEUE AFTER DEQUEUE\n");
-        printQUeue(block->head_queue);
-=======
-       // printf("PRINT QUEUE AFTER DEQUEUE\n");
-      //  printQueue(block->head_queue);
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
+        printQueue(block->head_queue);
     } else {
         block->head_queue = NULL;
         DEBUG_PRINT("--------->EMPTY QUEUE\n");
@@ -326,13 +256,7 @@ int dequeue(block *block) {
 }
 
 
-<<<<<<< HEAD
-void printJobInfo(job * j) {  
-    DEBUG_PRINT("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
-}
 
-=======
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
 // Ritorna il primo server libero nel blocco specificato
 server *findFreeServer(int block_type) {
     block * b = &blocks[block_type];
@@ -511,36 +435,6 @@ void process_completion(compl c) {
         }
 }
 
-<<<<<<< HEAD
-// Ritorna il blocco destinazione di un job dopo il suo completamento
-int getDestination(enum block_types from, int type) {
-    switch (from) {
-        case CONTROL_UNIT:
-            if(type==EXTERNAL) {  //external  
-                DEBUG_PRINT("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
-                return VIDEO_UNIT;
-            }
-            if(type==INTERNAL) { //internal 
-                DEBUG_PRINT("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
-                int ret = routing_from_control_unit();
-                DEBUG_PRINT("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
-                return ret;
-            } else {
-                return NULL;
-            }
-        case VIDEO_UNIT:
-            return CONTROL_UNIT;
-        case WLAN_UNIT:
-            return EDGE_UNIT;
-        case ENODE_UNIT:
-            return EDGE_UNIT;
-        case EDGE_UNIT:
-            return CLOUD_UNIT;
-        case CLOUD_UNIT:
-            return EXIT;
-            break;
-    }
-}
 
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
@@ -560,7 +454,7 @@ int routing_from_control_unit() {
 }
 
 //Thread che disattiva la WLAN essendo un server intermittente 
-int intermittent_wlan() {
+void intermittent_wlan() {
     DEBUG_PRINT("INTERMITTENT WLAN\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
@@ -577,35 +471,7 @@ int intermittent_wlan() {
 }
 
 
-// Inserisce un elemento nella lista ordinata
-int insertSorted(sorted_completions *compls, compl completion) {
-    int i;
-    int n = compls->num_completions;
 
-    for (i = n - 1; (i >= 0 && (compls->sorted_list[i].value > completion.value)); i--) {
-        compls->sorted_list[i + 1] = compls->sorted_list[i];
-    }
-    compls->sorted_list[i + 1] = completion;
-    compls->num_completions++;
-
-    return (n + 1);
-}
-
-// Ricerca binaria di un elemento su una lista ordinata
-int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
-    //DEBUG_PRINT("binary search\n");
-    if (high < low) {
-        return -1;
-    }
-    int mid = (low + high) / 2;
-    if (completion.value == compls->sorted_list[mid].value) {
-        return mid;
-    }
-    if (completion.value == compls->sorted_list[mid].value) {
-        return binarySearch(compls, (mid + 1), high, completion);
-    }
-    return binarySearch(compls, low, (mid - 1), completion);
-}
 
 // Function to delete an element
 int deleteElement(sorted_completions *compls, compl completion) {
@@ -627,8 +493,6 @@ int deleteElement(sorted_completions *compls, compl completion) {
 
     return n - 1;
 }
-=======
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
 
 // Ritorna il minimo tra due valori
 double my_min(double x, double y) {
@@ -795,7 +659,6 @@ void print_statistics(double currentClock) {
                 p   += s->sum.service / currentClock;
                 n++;
             }
-            
         }
     }
 }
@@ -861,13 +724,8 @@ int calculate_energy_consumption() {
 }
 
 
-<<<<<<< HEAD
-int initialize() {
-   DEBUG_PRINT("initialize\n");
-=======
 void initialize() {
-   printf("initialize\n");
->>>>>>> 02b49a198f2d8c329abee79432da9f4837775fca
+   DEBUG_PRINT("initialize\n");
    streamID=0;
    clock.current = START;
    completed = 0;
