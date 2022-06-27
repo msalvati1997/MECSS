@@ -28,7 +28,7 @@ struct clock_t clock;                          // Mantiene le informazioni sul c
 ///////////////////////////////////////////////////////////////////////////////////////
 
 //FUNCTIONS
-/*
+
 char* stringFromEnum(int f);
 char* stringFromEnum2(int f);
 void printJobInfo(job * j);
@@ -59,10 +59,11 @@ void clear_environment();
 void reset_statistics();
 int calculate_energy_consumption();
 void initialize();
+void print_line_release();
 void write_rt_csv_finite();
 void *append_on_csv(FILE *fpt, double ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
-*/
+/////////////////////////////////////////////////////////////////////////////////////
 char* stringFromEnum(int f) {
 
     char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
@@ -511,7 +512,6 @@ void print_sorted_list() {
 
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
-
     DEBUG_PRINT("Method : Finite horizon run\n");
     DEBUG_PRINT("Stop time %d\n",stop_time);
     int n = 1;
@@ -552,9 +552,7 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calculate statistic finali
    calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
-   for(int i=0;i<NUM_BLOCKS;i++) {
-            print_statistics(clock.current);
-   }
+   print_statistics(clock.current);
    DEBUG_PRINT("fine\n");
    ////////////////////
    long seed;
@@ -572,8 +570,8 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
     DEBUG_PRINT("\n\n");
     for (int r = 0; r < repetitions; r++) {
         initialize();
-        print_line();
-        DEBUG_PRINT("simulazione ciclo numero %d\n", r);
+        print_line_release();
+        printf("\nSIMULAZIONE CICLO NUMERO %d\n", r);
         finite_horizon_run(stop_time, r);
         clear_environment();
     }
@@ -745,6 +743,7 @@ void initialize() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
+    
    DEBUG_PRINT("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
@@ -773,6 +772,18 @@ void initialize() {
    DEBUG_PRINT("unit starting initialized \n");
 
    (*control_unit)->id=0;
+   (*video_unit)->id=1;
+   (*video_unit+1)->id=2;
+   (*wlan_unit)->id=3;
+   (*wlan_unit+1)->id=4;
+   (*enode_unit)->id=5;
+   (*edge_unit)->id=6;
+   (*edge_unit+1)->id=7;
+   (*edge_unit+2)->id=8;
+   (*edge_unit+3)->id=9;
+   (*cloud_unit)->id=10;
+
+
    (*control_unit)->status=IDLE;
    (*control_unit)->online=ONLINE;
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
@@ -780,10 +791,10 @@ void initialize() {
    streamID+=streamID;
    (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
-  
+   
+
    DEBUG_PRINT("control_unit initialized\n");
    for(int i=0;i<blocks[1].num_servers;i++) {
-       (*video_unit+i)->id=i;
        (*video_unit+i)->status=IDLE;
        (*video_unit+i)->online=ONLINE;
        (*video_unit+i)->loss=LOSS_SYSTEM;
@@ -796,7 +807,6 @@ void initialize() {
 
 
    for(int i=0;i<blocks[2].num_servers;i++) {
-         (*wlan_unit+i)->id=i;
          (*wlan_unit+i)->status=IDLE;
          (*wlan_unit+i)->online=ONLINE;
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
@@ -806,7 +816,6 @@ void initialize() {
          streamID+=streamID;
    }
 
-   (*enode_unit)->id=6;
    (*enode_unit)->status=IDLE;
    (*enode_unit)->online=ONLINE;
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
@@ -816,7 +825,6 @@ void initialize() {
    streamID+=streamID;
    
    for(int i=0;i<blocks[4].num_servers;i++) {
-          (*edge_unit+i)->id=i;
           (*edge_unit+i)->status=IDLE;
           (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
@@ -826,7 +834,6 @@ void initialize() {
           streamID+=streamID;
    }
 
-   (*cloud_unit)->id=11;
    (*cloud_unit)->status=IDLE;
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
@@ -847,7 +854,6 @@ void initialize() {
    blocks[5].serv = malloc(sizeof(server*));
    blocks[5].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
-   blocks[1].type=1;
 
 
    insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
@@ -864,9 +870,6 @@ void initialize() {
    global_sorted_completions.num_completions=0;
 
    DEBUG_PRINT("%f\n",clock.arrival);
-   for(int i=0;i<6;i++) {
-   DEBUG_PRINT("%d type\n", blocks[i].type);
-   }
    DEBUG_PRINT("finish initialized\n");
 }
 
@@ -893,4 +896,8 @@ void write_rt_csv_finite() {
 // Stampa a schermo una linea di separazione
 void print_line() {
     DEBUG_PRINT("\n————————————————————————————————————————————————————————————————————————————————————————\n");
+}
+// Stampa a schermo una linea di separazione
+void print_line_release() {
+    printf("\n————————————————————————————————————————————————————————————————————————————————————————\n");
 }
