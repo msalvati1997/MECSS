@@ -11,10 +11,13 @@
 //=   - Input is c = number of servers and a = total offered load           =
 //=   - Output returned is Erlang-B blocking probability                    =
 //===========================================================================
+void print_line();
+void *append_on_csv(FILE *fpt, double ts);
+void *append_on_csv_v2(FILE *fpt, double ts, double p);
+
 double E(int c, double a)
 {
-  double     e_last;        // Last E() value
-
+  double  e_last;        // Last E() value
   if (c == 0)
     return(1.0);
   else
@@ -29,7 +32,7 @@ void print_line() {
 
 
 // Inserisce una nuova linea nel file csv specificato
-void *append_on_csv(FILE *fpt, double ts, double p) {
+void *append_on_csv(FILE *fpt, double ts) {
     fprintf(fpt, "%2.6f\n", ts);
     return fpt;
 }
