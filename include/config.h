@@ -3,11 +3,12 @@
 #define NUM_BLOCKS 6
 #define NUM_METRICS 2
 #define START 0.0
-#define STOP  2000.0//100.0 * 24.0 * 60.0 * 60.0
+#define STOP  10.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
 #define WLAN_P 0.11
-#define ARRIVAL_RATE 150.0
+#define INTERARRIVAL_TIME 500.0
+#define ARRIVAL_RATE 60
 
 #define TH_CONTROL_UNIT 109.8873675
 #define TH_VIDEO 49.8873675

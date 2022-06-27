@@ -45,7 +45,7 @@ char* stringFromEnum2(int f) {
 double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
-    arrival += Exponential(1 / ARRIVAL_RATE);
+    arrival += Exponential(ARRIVAL_RATE);
     printf("GENERATO NUOVO ARRIVO : %f s\n", arrival);
     return arrival;
 }
@@ -269,7 +269,7 @@ void process_completion(compl c) {
             insertSorted(&global_sorted_completions, c2);
             return;
     }
-    if (destination != CLOUD_UNIT) {
+    if (destination != CLOUD_UNIT && destination != VIDEO_UNIT) {
         enqueue(&blocks[destination], c.value,INTERNAL);
         blocks[destination].total_arrivals++;
         blocks[destination].jobInBlock++;
@@ -289,21 +289,38 @@ void process_completion(compl c) {
             insertSorted(&global_sorted_completions, c3);
             return;
         } else {
-            if(destination==VIDEO_UNIT) {
-                 printf("JOB BYPASSED FROM VIDEO UNIT\n");
-                 completed++;
-                 bypassed++;
-                 blocks[destination].total_bypassed++;
-                 return;
-            } else {
                   printf("NUMERO DI JOB IN CODA AUMENTA NEL BLOCCO %s\n", stringFromEnum(blocks[destination].type));
                   blocks[destination].jobInQueue++; 
                   return;
             }
         }
-    }
-    
-    
+     if(destination == VIDEO_UNIT) {
+        blocks[destination].total_arrivals++;
+        // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
+        freeServer = findFreeServer(destination);
+        if (freeServer != NULL) {
+            blocks[destination].jobInBlock++;
+            enqueue(&blocks[destination], c.value,INTERNAL);
+            freeServer->block=&blocks[destination];
+            compl c3 = {freeServer, INFINITY};
+            double service_3 = getService(destination, freeServer->stream);
+            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
+            c3.server=freeServer;
+            c3.value = clock.current + service_3;
+            freeServer->status = BUSY;
+            freeServer->sum.service += service_3;
+            freeServer->sum.served++;
+            freeServer->block->area.service += service_3;
+            insertSorted(&global_sorted_completions, c3);
+            return;
+        } else {
+                 printf("JOB BYPASSED FROM VIDEO UNIT\n");
+                 completed++;
+                 bypassed++;
+                 blocks[destination].total_bypassed++;
+                 return;
+            }
+        }
 }
 
 // Ritorna il blocco destinazione di un job dopo il suo completamento
