@@ -160,7 +160,7 @@ FILE *open_csv_appendMode(char *filename) {
 double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
-    arrival += Exponential(1/INTERARRIVAL_TIME);
+    arrival += Exponential(INTERARRIVAL_TIME);
     DEBUG_PRINT("GENERATO NUOVO ARRIVO : %f s\n", arrival);
     return arrival;
 }
