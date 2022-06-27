@@ -11,6 +11,7 @@
 //=   - Input is c = number of servers and a = total offered load           =
 //=   - Output returned is Erlang-B blocking probability                    =
 //===========================================================================
+
 double E(int c, double a)
 {
   double     e_last;        // Last E() value
@@ -19,11 +20,6 @@ double E(int c, double a)
     return(1.0);
   else
     return((a * (e_last = E(c - 1, a))) / (c + a * e_last));
-}
-
-// Stampa a schermo una linea di separazione
-void print_line() {
-    printf("\n————————————————————————————————————————————————————————————————————————————————————————\n");
 }
 
 

@@ -6,8 +6,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdio.h>          // Needed for printf()
+#include <stdio.h>          // Needed for DEBUG_PRINT()
 #include <stdlib.h>  
+
+#ifdef DEBUG
+#define DEBUG_PRINT(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( false )
+#else
+#define DEBUG_PRINT(...) do{ } while ( false )
+#endif
 
 /*@todo 
 COSE DA FARE:
@@ -54,7 +60,7 @@ double getArrival(double current) {
     double arrival = current;
     SelectStream(254);
     arrival += Exponential(1/INTERARRIVAL_TIME);
-    printf("GENERATO NUOVO ARRIVO : %f s\n", arrival);
+    DEBUG_PRINT("GENERATO NUOVO ARRIVO : %f s\n", arrival);
     return arrival;
 }
 
@@ -77,7 +83,7 @@ double getService(int type_service, int stream) {
         case 5:
             return Exponential(CLOUD_PROCESSING_TIME);; 
         default:
-            printf("Case not defined\n");
+            DEBUG_PRINT("Case not defined\n");
             return 0;
     }
 }
@@ -92,11 +98,11 @@ void enqueue(block *block_t, double arrival, int type) {
     j->next = NULL;
     j->type = type;
     if (block_t->tail){  // Appendi alla coda se esiste, altrimenti è la testa
-        printf("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block_t->type));
+        DEBUG_PRINT("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block_t->type));
         block_t->tail->next = malloc(sizeof(job));
         block_t->tail->next = j; 
     }else{
-        printf("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block_t->type));
+        DEBUG_PRINT("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block_t->type));
         block_t->head_service=malloc(sizeof(job));
         block_t->head_service = j;
     }
@@ -106,8 +112,8 @@ void enqueue(block *block_t, double arrival, int type) {
     if (block_t->head_queue == NULL) {
         block_t->head_queue = j;
     }
-   // printf("PRINT QUEUE AFTER ENQUEUE\n");
-   // printQUeue(block_t->head_queue);
+    DEBUG_PRINT("PRINT QUEUE AFTER ENQUEUE\n");
+    printQUeue(block_t->head_queue);
 }
 
 void printQUeue(job *j) {
@@ -123,8 +129,8 @@ void printQUeue(job *j) {
 // Rimuove il job dalla coda del blocco specificata
 int dequeue(block *block) {
     job *j = block->head_service;
-   // printf("PRINT QUEUE BEFORE DEQUEUE\n");
-   // printQUeue(block->head_queue);
+    DEBUG_PRINT("PRINT QUEUE BEFORE DEQUEUE\n");
+    printQUeue(block->head_queue);
     int type = j->type;
 
     if (!j->next)
@@ -135,11 +141,11 @@ int dequeue(block *block) {
     if (block->head_queue != NULL && block->head_queue->next != NULL) {
         job *tmp = block->head_queue->next;
         block->head_queue = tmp;
-       // printf("PRINT QUEUE AFTER DEQUEUE\n");
-      //  printQUeue(block->head_queue);
+        DEBUG_PRINT("PRINT QUEUE AFTER DEQUEUE\n");
+        printQUeue(block->head_queue);
     } else {
         block->head_queue = NULL;
-       // printf("--------->EMPTY QUEUE\n");
+        DEBUG_PRINT("--------->EMPTY QUEUE\n");
     }
 
   
@@ -148,7 +154,7 @@ int dequeue(block *block) {
 
 
 void printJobInfo(job * j) {  
-    printf("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
+    DEBUG_PRINT("---------> [JOB : ARRIVO %f, NEXT=NULL, TYPE : %s ]\n", j->arrival,stringFromEnum2(j->type));
 }
 
 // Ritorna il primo server libero nel blocco specificato
@@ -158,18 +164,18 @@ server *findFreeServer(int block_type) {
    
     for (int i = 0; i <  num; i++) {
         if((*b->serv+i)->status==IDLE){
-            printf("SERVER IDLE FOUND IN %d - %s\n", b->type, stringFromEnum(b->type));
+            DEBUG_PRINT("SERVER IDLE FOUND IN %d - %s\n", b->type, stringFromEnum(b->type));
             return *b->serv+i;
         }
     }
-    printf("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum(b->type));
+    DEBUG_PRINT("SERVER IDLE NOT FOUND IN %s\n", stringFromEnum(b->type));
     return NULL;
 }
 
 // Processa un arrivo dall'esterno verso il sistema
 void process_arrival() {
     print_line();
-    printf("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
+    DEBUG_PRINT("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
     blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
 
@@ -177,7 +183,7 @@ void process_arrival() {
     // C'è un servente libero, quindi genero il completamento
     if (s != NULL) {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
-        printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(0), serviceTime);
+        DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(0), serviceTime);
         compl c = {s, INFINITY};
         s->block=&blocks[0];
         c.server=s;
@@ -205,18 +211,18 @@ void process_completion(compl c) {
     int type;
     int destination;
     server *freeServer;
-    printf("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
-    printf("DIMINUISCO IL NUMERO DI JOB NEL BLOCCO IN QUANTO UN JOB VIENE SERVITO : jobInBlock= %d\n",blocks[block_type].jobInBlock);
+    DEBUG_PRINT("BLOCCO DI PROCESSAMENTO DI UN NEXT EVENT IN : %s\n", stringFromEnum(block_type));
+    DEBUG_PRINT("DIMINUISCO IL NUMERO DI JOB NEL BLOCCO IN QUANTO UN JOB VIENE SERVITO : jobInBlock= %d\n",blocks[block_type].jobInBlock);
     type = dequeue(&blocks[block_type]);  // Toglie il job servito dal blocco e fa "avanzare" la lista collegata di job
     deleteElement(&global_sorted_completions, c);
     // Se nel blocco ci sono job in coda, devo generare il prossimo completamento per il servente che si è liberato.
     if (blocks[block_type].jobInQueue > 0 && !c.server->need_resched) {
-        printf("N. JOB IN CODA PRESENTI NEL BLOCCO %s: %d\n",stringFromEnum(block_type), blocks[block_type].jobInQueue);
-        printf("QUINDI GENERO IL PROSSIMO COMPLETAMENTO\n");
+        DEBUG_PRINT("N. JOB IN CODA PRESENTI NEL BLOCCO %s: %d\n",stringFromEnum(block_type), blocks[block_type].jobInQueue);
+        DEBUG_PRINT("QUINDI GENERO IL PROSSIMO COMPLETAMENTO\n");
         blocks[block_type].jobInQueue--;
-        printf("TOLGO UN JOB DALLA CODA E LO PROCESSO NEL BLOCCO\n");
+        DEBUG_PRINT("TOLGO UN JOB DALLA CODA E LO PROCESSO NEL BLOCCO\n");
         double service_1 = getService(block_type, c.server->stream);
-        printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(block_type), service_1);
+        DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(block_type), service_1);
         c.value = clock.current + service_1;
         c.server->sum.service += service_1;
         c.server->sum.served++;
@@ -224,29 +230,29 @@ void process_completion(compl c) {
         insertSorted(&global_sorted_completions, c);
     } else {
         if(block_type==CLOUD_UNIT && !c.server->need_resched) {
-            printf("CLOUD NON HA CODA - E' UN M/M/INF\n");
+            DEBUG_PRINT("CLOUD NON HA CODA - E' UN M/M/INF\n");
             c.server->status=IDLE;
         }
         if(block_type==VIDEO_UNIT && !c.server->need_resched) {
-            printf("VIDEO UNIT NON HA CODA\n");
+            DEBUG_PRINT("VIDEO UNIT NON HA CODA\n");
             c.server->status=IDLE;
         }
         else {
-          printf("JOB NON PRESENTI IN CODA - STATUS TO IDLE\n");
+          DEBUG_PRINT("JOB NON PRESENTI IN CODA - STATUS TO IDLE\n");
            c.server->status = IDLE;
         }
     }
 
     // Se un server è schedulato per la terminazione, non prende un job dalla coda e và OFFLINE
     if (c.server->need_resched) {
-        printf("-------SERVER SCHEDULATO PER LA TERMINAZIONE ----------\n"); 
+        DEBUG_PRINT("-------SERVER SCHEDULATO PER LA TERMINAZIONE ----------\n"); 
         c.server->online = OFFLINE;
         c.server->need_resched = false;
     }
 
     //uscita dalla rete se il job esce dal CLOUD
     if (block_type == CLOUD_UNIT) {
-        printf("-----------JOB EXIT FROM CLOUD----------------\n");
+        DEBUG_PRINT("-----------JOB EXIT FROM CLOUD----------------\n");
         completed++;
         return;
     }
@@ -254,7 +260,7 @@ void process_completion(compl c) {
     // Gestione blocco destinazione job 
     destination = getDestination(c.server->block->type,type);  // Trova la destinazione adatta per il job appena servito 
     blocks[destination].total_arrivals++;
-    printf("FROM %s TO %s\n", stringFromEnum(block_type), stringFromEnum(destination));
+    DEBUG_PRINT("FROM %s TO %s\n", stringFromEnum(block_type), stringFromEnum(destination));
     if (destination == EXIT) {
         blocks[block_type].total_dropped++;
         dropped++;
@@ -266,7 +272,7 @@ void process_completion(compl c) {
             enqueue(&blocks[destination], c.value,INTERNAL);
             compl c2 = {cloud_server, INFINITY};
             double service_2 = getService(CLOUD_UNIT, cloud_server->stream);
-            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_2);
+            DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_2);
             c2.value = clock.current + service_2;
             c2.server=cloud_server;
             cloud_server->sum.service += service_2;
@@ -285,7 +291,7 @@ void process_completion(compl c) {
             freeServer->block=&blocks[destination];
             compl c3 = {freeServer, INFINITY};
             double service_3 = getService(destination, freeServer->stream);
-            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
+            DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
             c3.server=freeServer;
             c3.value = clock.current + service_3;
             freeServer->status = BUSY;
@@ -295,7 +301,7 @@ void process_completion(compl c) {
             insertSorted(&global_sorted_completions, c3);
             return;
         } else {
-                  printf("NUMERO DI JOB IN CODA AUMENTA NEL BLOCCO %s\n", stringFromEnum(blocks[destination].type));
+                  DEBUG_PRINT("NUMERO DI JOB IN CODA AUMENTA NEL BLOCCO %s\n", stringFromEnum(blocks[destination].type));
                   blocks[destination].jobInQueue++; 
                   return;
             }
@@ -310,7 +316,7 @@ void process_completion(compl c) {
             freeServer->block=&blocks[destination];
             compl c3 = {freeServer, INFINITY};
             double service_3 = getService(destination, freeServer->stream);
-            printf("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
+            DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(destination) ,service_3);
             c3.server=freeServer;
             c3.value = clock.current + service_3;
             freeServer->status = BUSY;
@@ -320,7 +326,7 @@ void process_completion(compl c) {
             insertSorted(&global_sorted_completions, c3);
             return;
         } else {
-                 printf("JOB BYPASSED FROM VIDEO UNIT\n");
+                 DEBUG_PRINT("JOB BYPASSED FROM VIDEO UNIT\n");
                  completed++;
                  bypassed++;
                  blocks[destination].total_bypassed++;
@@ -334,13 +340,13 @@ int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
             if(type==EXTERNAL) {  //external  
-                printf("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
+                DEBUG_PRINT("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
                 return VIDEO_UNIT;
             }
             if(type==INTERNAL) { //internal 
-                printf("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
+                DEBUG_PRINT("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
                 int ret = routing_from_control_unit();
-                printf("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
+                DEBUG_PRINT("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
             } else {
                 return NULL;
@@ -378,14 +384,14 @@ int routing_from_control_unit() {
 
 //Thread che disattiva la WLAN essendo un server intermittente 
 int intermittent_wlan() {
-    printf("INTERMITTENT WLAN\n");
+    DEBUG_PRINT("INTERMITTENT WLAN\n");
     double random = Uniform(0,1);
     if(random<=P_OFF_WLAN) {
-        printf("WLAN OFF\n");
+        DEBUG_PRINT("WLAN OFF\n");
         (*wlan_unit)->need_resched=true;
         (*wlan_unit+1)->need_resched=true;
     } else {
-        printf("WLAN ON\n");
+        DEBUG_PRINT("WLAN ON\n");
         (*wlan_unit)->need_resched=false;
         (*wlan_unit+1)->need_resched=false;
         (*wlan_unit)->online=ONLINE;
@@ -410,7 +416,7 @@ int insertSorted(sorted_completions *compls, compl completion) {
 
 // Ricerca binaria di un elemento su una lista ordinata
 int binarySearch(sorted_completions *compls, int low, int high, compl completion) {
-    //printf("binary search\n");
+    //DEBUG_PRINT("binary search\n");
     if (high < low) {
         return -1;
     }
@@ -431,7 +437,7 @@ int deleteElement(sorted_completions *compls, compl completion) {
     int pos = binarySearch(compls, 0, n - 1, completion);
 
     if (pos == -1) {
-        printf("Element not found\n");
+        DEBUG_PRINT("Element not found\n");
         return n;
     }
 
@@ -451,20 +457,20 @@ double my_min(double x, double y) {
 }
 
 void print_sorted_list() {
-    printf("PRINT DELLA SORTED LIST DI COMPLETAMENTI\n");
+    DEBUG_PRINT("PRINT DELLA SORTED LIST DI COMPLETAMENTI\n");
     for(int i=0;i<global_sorted_completions.num_completions;i++) {
         compl *nextCompletion = &global_sorted_completions.sorted_list[i];
         server *nextCompletionServer = nextCompletion->server;
-        printf("[BLOCCO : %s, TIME : %f], ",stringFromEnum(nextCompletionServer->block->type),nextCompletion->value );
+        DEBUG_PRINT("[BLOCCO : %s, TIME : %f], ",stringFromEnum(nextCompletionServer->block->type),nextCompletion->value );
     }
-    printf("\n");
+    DEBUG_PRINT("\n");
 }
 
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
 
-    printf("Method : Finite horizon run\n");
-    printf("Stop time %d\n",stop_time);
+    DEBUG_PRINT("Method : Finite horizon run\n");
+    DEBUG_PRINT("Stop time %d\n",stop_time);
     int n = 1;
     while (clock.arrival <= stop_time) {
         print_line();
@@ -473,17 +479,17 @@ void finite_horizon_run(int stop_time, int repetition) {
         server *nextCompletionServer = nextCompletion->server;
     
         clock.next = (double) my_min(clock.arrival,nextCompletion->value);  // Ottengo il prossimo evento
-        printf("OTTENUTO PROSSIMO EVENTO DALLA SORTED LIST -> %f\n", clock.next);
+        DEBUG_PRINT("OTTENUTO PROSSIMO EVENTO DALLA SORTED LIST -> %f\n", clock.next);
         if(clock.next==clock.arrival) {
-            printf("EVENTO : ARRIVO ESTERNO DAL SISTEMA\n");
+            DEBUG_PRINT("EVENTO : ARRIVO ESTERNO DAL SISTEMA\n");
         } else {
-            printf("EVENTO : COMPLETAMENTO DI UN JOB IN %s\n", stringFromEnum(nextCompletionServer->block->type));
+            DEBUG_PRINT("EVENTO : COMPLETAMENTO DI UN JOB IN %s\n", stringFromEnum(nextCompletionServer->block->type));
         }
        
-        printf("NUMERO JOB PRESENTI NEL SISTEMA  : \n");
+        DEBUG_PRINT("NUMERO JOB PRESENTI NEL SISTEMA  : \n");
         for (int i = 0; i < NUM_BLOCKS; i++) {
             if (blocks[i].jobInBlock > 0) {
-                printf(" ->       JOB PRESENTI NEL BLOCCO %s : %d\n", stringFromEnum(blocks[i].type) , blocks[i].jobInBlock);
+                DEBUG_PRINT(" ->       JOB PRESENTI NEL BLOCCO %s : %d\n", stringFromEnum(blocks[i].type) , blocks[i].jobInBlock);
                 blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
                 blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
             }
@@ -494,7 +500,8 @@ void finite_horizon_run(int stop_time, int repetition) {
         } else {
             process_completion(*nextCompletion);
         }
-        if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {            printf("calculate statistic interno \n ");
+        if (clock.current >= (n-1) * 1200 && clock.current < n * 1200 && completed>5) {            
+            DEBUG_PRINT("calculate statistic interno \n ");
             calculate_statistics_clock(blocks, clock.current);
             n++;
         }
@@ -505,7 +512,7 @@ void finite_horizon_run(int stop_time, int repetition) {
    for(int i=0;i<NUM_BLOCKS;i++) {
             print_statistics(clock.current);
    }
-   printf("fine\n");
+   DEBUG_PRINT("fine\n");
    ////////////////////
    long seed;
    GetSeed(&seed);
@@ -517,24 +524,24 @@ void finite_horizon_run(int stop_time, int repetition) {
 // Esegue le ripetizioni di singole run a orizzonte finito
 void finite_horizon_simulation(int stop_time, int repetitions) {
     PlantSeeds(231232132);
-    printf("finite horizon simulation\n");
-    printf("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
-    printf("\n\n");
+    DEBUG_PRINT("finite horizon simulation\n");
+    DEBUG_PRINT("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
+    DEBUG_PRINT("\n\n");
     for (int r = 0; r < repetitions; r++) {
         initialize();
         print_line();
-        printf("simulazione ciclo numero %d\n", r);
+        DEBUG_PRINT("simulazione ciclo numero %d\n", r);
         finite_horizon_run(stop_time, r);
         clear_environment();
     }
-    printf("write to csv\n");
+    DEBUG_PRINT("write to csv\n");
     write_rt_csv_finite();
 }
 
-// Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
+// Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
     print_line();
-    printf("calculate staticts clock\n");
+    DEBUG_PRINT("calculate staticts clock\n");
     char* filename = "continuos_finite.csv";
     FILE *csv;
     csv = open_csv_appendMode(filename);
@@ -603,7 +610,7 @@ void print_statistics(double currentClock) {
         server_list = blocks[i].serv;
         for (int j = 0; j < blocks[i].num_servers; j++) {
             server *s = malloc(sizeof(server));
-            s = *(server_list+j);
+            s = (*server_list+j);
             if(s != NULL){
                 printf("    %d     %f     %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
                 p   += s->sum.service / currentClock;
@@ -616,7 +623,7 @@ void print_statistics(double currentClock) {
 
 // Calcola le statistiche specificate
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS], int rep) {
-    printf("calculate_statistics_fin\n");
+    DEBUG_PRINT("calculate_statistics_fin\n");
     double visit_rt = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
       
@@ -638,12 +645,12 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double utilization = lambda_i/(mu);
     }
     rt_arr[rep] = visit_rt;
-    printf("print statistiche finali\n");
+    DEBUG_PRINT("print statistiche finali\n");
 }
 
 // Resetta l'ambiente di esecuzione tra due run ad orizzonte finito
 void clear_environment() {
-    printf("clear environment\n");
+    DEBUG_PRINT("clear environment\n");
     global_sorted_completions = empty_sorted;
     for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
         blocks[block_type].area.node = 0;
@@ -655,7 +662,7 @@ void clear_environment() {
 
 // Resetta le statistiche tra un batch ed il successivo
 void reset_statistics() {
-    printf("reset_statistics\n");
+    DEBUG_PRINT("reset_statistics\n");
     clock.batch_current = clock.current;
     for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
         blocks[block_type].total_arrivals = 0;
@@ -676,14 +683,14 @@ int calculate_energy_consumption() {
 
 
 int initialize() {
-   printf("initialize\n");
+   DEBUG_PRINT("initialize\n");
    streamID=0;
    clock.current = START;
    completed = 0;
    bypassed = 0;
    dropped = 0;
    global_sorted_completions.num_completions = 0;
-   printf("clock current initialize %f\n", clock.current);
+   DEBUG_PRINT("clock current initialize %f\n", clock.current);
   
     for (int block_type = 0; block_type < NUM_BLOCKS; block_type++) {
         blocks[block_type].type = block_type;
@@ -696,7 +703,7 @@ int initialize() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
-   printf("blocks initialized  \n");
+   DEBUG_PRINT("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
@@ -721,7 +728,7 @@ int initialize() {
    (*cloud_unit)=calloc(1,sizeof(server));
    blocks[5].num_servers=1; //cloud
 
-   printf("unit starting initialized \n");
+   DEBUG_PRINT("unit starting initialized \n");
 
    (*control_unit)->id=0;
    (*control_unit)->status=IDLE;
@@ -732,7 +739,7 @@ int initialize() {
    (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
   
-   printf("control_unit initialized\n");
+   DEBUG_PRINT("control_unit initialized\n");
    for(int i=0;i<blocks[1].num_servers;i++) {
        (*video_unit+i)->id=i;
        (*video_unit+i)->status=IDLE;
@@ -814,11 +821,11 @@ int initialize() {
    insertSorted(&global_sorted_completions, (compl) {(*cloud_unit), INFINITY});
    global_sorted_completions.num_completions=0;
 
-   printf("%f\n",clock.arrival);
+   DEBUG_PRINT("%f\n",clock.arrival);
    for(int i=0;i<6;i++) {
-   printf("%d type\n", blocks[i].type);
+   DEBUG_PRINT("%d type\n", blocks[i].type);
    }
-   printf("finish initialized\n");
+   DEBUG_PRINT("finish initialized\n");
 }
 
 
@@ -833,7 +840,7 @@ void write_rt_csv_finite() {
     char* filename = "results.csv";
     csv = open_csv(filename);
     if(csv != NULL){
-        printf("file exist!\n");
+        DEBUG_PRINT("file exist!\n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, i, statistics[i]);
         }
@@ -841,3 +848,7 @@ void write_rt_csv_finite() {
     }
  }
 
+// Stampa a schermo una linea di separazione
+void print_line() {
+    DEBUG_PRINT("\n————————————————————————————————————————————————————————————————————————————————————————\n");
+}
