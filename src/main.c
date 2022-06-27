@@ -19,6 +19,7 @@ COSE DA FARE:
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
 struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
+///////////////////////////////////////////////////////////////////////////////////////
 
 FILE *open_csv(char *filename) {
     FILE *fpt;
@@ -105,8 +106,8 @@ void enqueue(block *block_t, double arrival, int type) {
     if (block_t->head_queue == NULL) {
         block_t->head_queue = j;
     }
-    printf("PRINT QUEUE AFTER ENQUEUE\n");
-    printQUeue(block_t->head_queue);
+   // printf("PRINT QUEUE AFTER ENQUEUE\n");
+   // printQUeue(block_t->head_queue);
 }
 
 void printQUeue(job *j) {
@@ -122,8 +123,8 @@ void printQUeue(job *j) {
 // Rimuove il job dalla coda del blocco specificata
 int dequeue(block *block) {
     job *j = block->head_service;
-    printf("PRINT QUEUE BEFORE DEQUEUE\n");
-    printQUeue(block->head_queue);
+   // printf("PRINT QUEUE BEFORE DEQUEUE\n");
+   // printQUeue(block->head_queue);
     int type = j->type;
 
     if (!j->next)
@@ -134,11 +135,11 @@ int dequeue(block *block) {
     if (block->head_queue != NULL && block->head_queue->next != NULL) {
         job *tmp = block->head_queue->next;
         block->head_queue = tmp;
-        printf("PRINT QUEUE AFTER DEQUEUE\n");
-        printQUeue(block->head_queue);
+       // printf("PRINT QUEUE AFTER DEQUEUE\n");
+      //  printQUeue(block->head_queue);
     } else {
         block->head_queue = NULL;
-        printf("--------->EMPTY QUEUE\n");
+       // printf("--------->EMPTY QUEUE\n");
     }
 
   
@@ -154,10 +155,8 @@ void printJobInfo(job * j) {
 server *findFreeServer(int block_type) {
     block * b = &blocks[block_type];
     int num = b->num_servers;
-    //printf("num server %d\n", num);
-    //printf("type %d\n", block_type);
+   
     for (int i = 0; i <  num; i++) {
-        //printf("STATUS OF SERVER %d / %d \n", i, (*b->serv+i)->status);
         if((*b->serv+i)->status==IDLE){
             printf("SERVER IDLE FOUND IN %d - %s\n", b->type, stringFromEnum(b->type));
             return *b->serv+i;
@@ -427,11 +426,8 @@ int binarySearch(sorted_completions *compls, int low, int high, compl completion
 
 // Function to delete an element
 int deleteElement(sorted_completions *compls, compl completion) {
-    //printf("delete element\n");
     int i;
     int n = compls->num_completions;
-   // printf("num element before delete : %d\n",n);
-
     int pos = binarySearch(compls, 0, n - 1, completion);
 
     if (pos == -1) {
@@ -445,7 +441,6 @@ int deleteElement(sorted_completions *compls, compl completion) {
     }
     compls->sorted_list[n - 1].value = INFINITY;
     compls->num_completions--;
-    //printf("num element after delete : %d\n",compls->num_completions);
 
     return n - 1;
 }
@@ -467,7 +462,7 @@ void print_sorted_list() {
 
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
-    //GetSeed();
+
     printf("Method : Finite horizon run\n");
     printf("Stop time %d\n",stop_time);
     int n = 1;
@@ -507,8 +502,16 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calculate statistic finali
    calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
-   print_line();
+   for(int i=0;i<NUM_BLOCKS;i++) {
+            print_statistics(clock.current);
+   }
    printf("fine\n");
+   ////////////////////
+   long seed;
+   GetSeed(&seed);
+   PlantSeeds(seed);  
+   //////////////////
+   print_line();
 }
 
 // Esegue le ripetizioni di singole run a orizzonte finito
@@ -558,10 +561,10 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
 }
 
 // Stampa a schermo le statistiche calcolate per ogni singolo blocco
-void print_statistics(block blocks[], double currentClock) {
+void print_statistics(double currentClock) {
     double system_total_wait = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
-
+     
         int arr = blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
         int jq = blocks[i].jobInQueue;
@@ -602,7 +605,6 @@ void print_statistics(block blocks[], double currentClock) {
             server *s = malloc(sizeof(server));
             s = *(server_list+j);
             if(s != NULL){
-                //printf("%d\n", s->id);
                 printf("    %d     %f     %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
                 p   += s->sum.service / currentClock;
                 n++;
@@ -634,7 +636,6 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
         double utilization = lambda_i/(mu);
-        print_statistics(&blocks[i],currentClock);
     }
     rt_arr[rep] = visit_rt;
     printf("print statistiche finali\n");
