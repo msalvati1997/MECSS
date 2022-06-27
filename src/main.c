@@ -592,12 +592,20 @@ void print_statistics(block blocks[], double currentClock) {
         printf("\n    server     utilization     avg service\n");
         double p = 0;
         int n = 0;
-        server **server_list = blocks[i].serv;
+        server **server_list;
+        server_list=malloc(sizeof(server*));
+        *(server_list) = malloc(sizeof(server)*blocks[i].num_servers);
+        server_list = blocks[i].serv;
         for (int j = 0; j < blocks[i].num_servers; j++) {
-            server *s = *(server_list+j);
-            printf("%8d %15.5f %15.2f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
-            p += s->sum.service / currentClock;
-            n++;
+            server *s = malloc(sizeof(server));
+            s = *(server_list+j);
+            if(s != NULL){
+                //printf("%d\n", s->id);
+                printf("   %d   %f    %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
+                p   += s->sum.service / currentClock;
+                n++;
+            }
+            
         }
     }
 }
