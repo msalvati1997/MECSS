@@ -26,6 +26,13 @@ FILE *open_csv(char *filename) {
     return fpt;
 }
 
+// Apre un csv in modalità append
+FILE *open_csv_appendMode(char *filename) {
+    FILE *fpt;
+    fpt = fopen(filename, "a");
+    return fpt;
+}
+
 char* stringFromEnum(int f) {
 
     char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
@@ -457,8 +464,10 @@ void print_sorted_list() {
     }
     printf("\n");
 }
+
 // Esegue una singola run di simulazione ad orizzonte finito
 void finite_horizon_run(int stop_time, int repetition) {
+    //GetSeed();
     printf("Method : Finite horizon run\n");
     printf("Stop time %d\n",stop_time);
     int n = 1;
@@ -485,7 +494,6 @@ void finite_horizon_run(int stop_time, int repetition) {
             }
         }
         clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
-       // printf("clock current : %f", clock.current);
         if (clock.current == clock.arrival) {
             process_arrival();
         } else {
@@ -505,10 +513,12 @@ void finite_horizon_run(int stop_time, int repetition) {
 
 // Esegue le ripetizioni di singole run a orizzonte finito
 void finite_horizon_simulation(int stop_time, int repetitions) {
+    PlantSeeds(231232132);
     printf("finite horizon simulation\n");
     printf("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     printf("\n\n");
     for (int r = 0; r < repetitions; r++) {
+        initialize();
         print_line();
         printf("simulazione ciclo numero %d\n", r);
         finite_horizon_run(stop_time, r);
@@ -812,8 +822,6 @@ int initialize() {
 
 
 int main(void) {
-    PlantSeeds(231232132);
-    initialize() ;
     finite_horizon_simulation(STOP, NUM_REPETITIONS);
 }
 

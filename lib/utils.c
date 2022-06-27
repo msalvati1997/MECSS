@@ -25,12 +25,8 @@ double E(int c, double a)
 void print_line() {
     printf("\n————————————————————————————————————————————————————————————————————————————————————————\n");
 }
-// Apre un csv in modalità append
-FILE *open_csv_appendMode(char *filename) {
-    FILE *fpt;
-    fpt = fopen(filename, "a");
-    return fpt;
-}
+
+
 
 // Inserisce una nuova linea nel file csv specificato
 void *append_on_csv(FILE *fpt, double ts, double p) {
