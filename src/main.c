@@ -601,7 +601,7 @@ void print_statistics(block blocks[], double currentClock) {
             s = *(server_list+j);
             if(s != NULL){
                 //printf("%d\n", s->id);
-                printf("   %d   %f    %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
+                printf("    %d     %f     %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
                 p   += s->sum.service / currentClock;
                 n++;
             }
