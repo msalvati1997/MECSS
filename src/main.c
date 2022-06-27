@@ -61,7 +61,7 @@ int calculate_energy_consumption();
 void initialize();
 void print_line_release();
 void write_rt_csv_finite();
-void *append_on_csv(FILE *fpt, double ts);
+void *append_on_csv(FILE *fpt, double ts, double p);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
 /////////////////////////////////////////////////////////////////////////////////////
 char* stringFromEnum(int f) {
@@ -743,7 +743,7 @@ void initialize() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
-    
+
    DEBUG_PRINT("blocks initialized  \n");
    control_unit=calloc(1,sizeof(server*));
    (*control_unit)=calloc(1,sizeof(server));
@@ -887,7 +887,7 @@ void write_rt_csv_finite() {
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
-            append_on_csv(csv, i);
+            append_on_csv(csv, i, statistics[i]);
         }
         fclose(csv);
     }
