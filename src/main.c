@@ -491,8 +491,7 @@ void finite_horizon_run(int stop_time, int repetition) {
         } else {
             process_completion(*nextCompletion);
         }
-        if (clock.current >= (n - 1) * 30 && clock.current < (n)*30 && completed > 16 && clock.arrival < stop_time) {
-            printf("calculate statistic interno \n ");
+        if (clock.current >= (n - 1) * 300 && clock.current < (n)*300 && completed > 16 && clock.arrival < stop_time) {            printf("calculate statistic interno \n ");
             calculate_statistics_clock(blocks, clock.current);
             n++;
         }
@@ -500,7 +499,7 @@ void finite_horizon_run(int stop_time, int repetition) {
     //calculate statistic finali
    calculate_statistics_fin(blocks, clock.current, statistics, repetition);
     //calcolo bilanciamento energetico 
-  print_line();
+   print_line();
    printf("fine\n");
 }
 
@@ -510,6 +509,7 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
     printf("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     printf("\n\n");
     for (int r = 0; r < repetitions; r++) {
+        print_line();
         printf("simulazione ciclo numero %d\n", r);
         finite_horizon_run(stop_time, r);
         clear_environment();
@@ -520,16 +520,12 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 
 // Calcola le statistiche ogni 5 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
-        print_line();
-
+    print_line();
     printf("calculate staticts clock\n");
-    char filename[100];
-    snprintf(filename, 100, "continuos_finite.csv");
+    char* filename = "continuos_finite.csv";
     FILE *csv;
     csv = open_csv_appendMode(filename);
-
     double visit_rt = 0;
-    double m = 0.0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
         int arr = blocks[i].total_arrivals;
         int jq = blocks[i].jobInQueue;
@@ -543,13 +539,9 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(m * mu, lambda_i);
-        if (i == CLOUD_UNIT) {
-            throughput = lambda_i;
-        }
+        double throughput = my_min(mu, lambda_i);
         double visit = throughput / external_arrival_rate;
-        visit_rt += wait * visit;
-        print_statistics(&blocks[i], currentClock);
+        visit_rt += wait * visit; 
     }
     append_on_csv_v2(csv, visit_rt, currentClock);
     fclose(csv);
@@ -614,7 +606,6 @@ void print_statistics(block blocks[], double currentClock) {
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS], int rep) {
     printf("calculate_statistics_fin\n");
     double visit_rt = 0;
-    double m = 0.0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
       
         int arr = blocks[i].total_arrivals;
@@ -629,14 +620,10 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(m * mu, lambda_i);
-        if (i == CLOUD_UNIT) {
-            throughput = lambda_i;
-        }
+        double throughput = my_min(mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
-
-        double utilization = lambda_i / (m * mu);
+        double utilization = lambda_i/(mu);
         print_statistics(&blocks[i],currentClock);
     }
     rt_arr[rep] = visit_rt;
@@ -843,6 +830,5 @@ void write_rt_csv_finite() {
         }
         fclose(csv);
     }
-    
  }
 
