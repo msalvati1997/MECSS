@@ -771,7 +771,7 @@ void reset_statistics() {
 double calculate_energy_consumption() {
     double m;
     for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
-        m+= statistics[i];
+        m+= statistics[i][0];
     }
     m = m / sizeof(statistics)/sizeof(double);
     return ENERGY_SUM*3600*m; //h in s
@@ -780,7 +780,7 @@ double calculate_energy_consumption() {
 double ts_mean(){
     double m;
     for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
-        m+= statistics[i];
+        m+= statistics[i][0];
     }
     m = m / sizeof(statistics)/sizeof(double);
     return m;
