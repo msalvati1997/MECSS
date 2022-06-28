@@ -587,6 +587,10 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
     char* filename = "continuos_finite.csv";
     FILE *csv;
     csv = open_csv_appendMode(filename);
+    if(init_csv==0) {
+        fprintf(csv, "clock current, response time (ms), energy consuption (Kwatt)\n");
+        init_csv=init_csv+1;
+    }
     double visit_rt = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
         int arr = blocks[i].total_arrivals;
@@ -605,7 +609,8 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit; 
     }
-    append_on_csv_v2(csv, visit_rt, currentClock);
+    double energy =ENERGY_SUM*visit_rt*3600;
+    fprintf(csv, "%2.6f,%2.6f, %2.6f\n",clock.current, visit_rt, energy);
     fclose(csv);
 }
 
@@ -697,6 +702,7 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
     }
     rt_arr[rep][0] = clock.current;
     rt_arr[rep][1]= visit_rt;
+    rt_arr[rep][2]=ENERGY_SUM*3600*visit_rt;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -771,7 +777,7 @@ void reset_statistics() {
 double calculate_energy_consumption() {
     double m;
     for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
-        m+= statistics[i][0];
+        m+= statistics[i][1];
     }
     m = m / sizeof(statistics)/sizeof(double);
     return ENERGY_SUM*3600*m; //h in s
@@ -780,7 +786,7 @@ double calculate_energy_consumption() {
 double ts_mean(){
     double m;
     for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
-        m+= statistics[i][0];
+        m+= statistics[i][1];
     }
     m = m / sizeof(statistics)/sizeof(double);
     return m;
@@ -940,6 +946,7 @@ void initialize() {
 
 
 int main(void) {
+    init_csv=0;
     finite_horizon_simulation(STOP, NUM_REPETITIONS);
 }
 
@@ -952,7 +959,7 @@ void write_rt_csv_finite() {
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
-     fprintf(csv, "response time,clock time\n");
+     fprintf(csv, "clock time (ms), response time (ms), power consumption kWatt\n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, statistics[i]);
         }

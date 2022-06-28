@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 2
+#define NUM_METRICS 3
 #define START 0.0
 #define STOP  10.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
@@ -166,4 +166,4 @@ int bypassed;
 int dropped;
 // --------------------------------------------------------------------------------------------------
 
-
+int init_csv;
