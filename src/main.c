@@ -55,7 +55,7 @@ void print_statistics(double currentClock);
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep);
 void clear_environment();
 void reset_statistics();
-int calculate_energy_consumption();
+double calculate_energy_consumption();
 void initialize();
 void print_line_release();
 void write_rt_csv_finite();
@@ -768,8 +768,22 @@ void reset_statistics() {
 
 
 //Calcola l'energia consumata dal sistema (capire come aggiornare vari'abili per ogni esecuzione)
-int calculate_energy_consumption() {
-    return 0;
+double calculate_energy_consumption() {
+    double m;
+    for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
+        m+= statistics[i];
+    }
+    m = m / sizeof(statistics)/sizeof(double);
+    return ENERGY_SUM*3600*m; //h in s
+}
+
+double ts_mean(){
+    double m;
+    for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
+        m+= statistics[i];
+    }
+    m = m / sizeof(statistics)/sizeof(double);
+    return m;
 }
 
 
