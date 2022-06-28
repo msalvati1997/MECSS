@@ -123,15 +123,11 @@
   return (a + (b - a) * Random());
 }
 
-   double Exponential(double m)
-/* =========================================================
- * Returns an exponentially distributed positive real number. 
- * NOTE: use m > 0.0
- * =========================================================
- */
+double Exponential(double m)
 {
-  return (-(1/m) * log(1.0 - Random()));
+  return (-m * log(1.0 - Random()));
 }
+
 
 
 double Hyperexponential(double m,double p){

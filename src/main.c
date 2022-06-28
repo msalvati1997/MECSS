@@ -169,7 +169,6 @@ double getArrival(double current) {
 double getService(int type_service, int stream) {
     SelectStream(stream);
     
-
     switch (type_service) {
         case 0:
             return Exponential(CONTROL_UNIT_SERVICE_TIME);
@@ -188,6 +187,8 @@ double getService(int type_service, int stream) {
             return 0;
     }
 }
+
+
 
 // Inserisce un job nella coda del blocco specificata
 void enqueue(block *block_t, double arrival, int type) {
@@ -274,7 +275,7 @@ server *findFreeServer(int block_type) {
 void process_arrival() {
     print_line();
     DEBUG_PRINT("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
-    blocks[0].total_arrivals++;
+    blocks[0].total_external_arrivals++;
     blocks[0].jobInBlock++;
 
     server *s = findFreeServer(0);
@@ -442,7 +443,7 @@ int routing_from_control_unit() {
         }      
    else {
        double random = Uniform(0, 1);
-       if(random<=P_WLAN) {
+       if(random<=P_WLAN_CHOICE) {
           return WLAN_UNIT;
        } else {
           return ENODE_UNIT;
@@ -593,7 +594,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double delay = blocks[i].area.queue / r_arr;
         double service = blocks[i].area.service / r_arr;
 
-        double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
+        double external_arrival_rate = 1 / (currentClock / blocks[0].total_external_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
         double throughput = my_min(mu, lambda_i);
@@ -620,23 +621,33 @@ void print_statistics(double currentClock) {
 
         system_total_wait += wait;
 
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = my_min(mu, lambda_i);
+
         printf("\n\n======== Result for block %s ========\n", stringFromEnum(blocks[i].type));
         printf("Number of Servers ................... = %d\n",blocks[i].num_servers);
         printf("Arrivals ............................ = %d\n", arr);
         printf("Completions.......................... = %d\n", blocks[i].total_completions);
+        printf("Lambda_i..............................=%f\n",lambda_i);
+        printf("Mu_i..................................=%f\n",mu);
+        printf("Throughput_i..........................=%f\n",throughput);
         printf("Job in Queue at the end ............. = %d\n", jq);
-        printf("Average interarrivals................ = %6.6f\n", inter);
+        printf("Average interarrivals................ = %f\n", inter);
 
-        printf("Average wait ........................ = %6.6f\n", wait);
+        printf("Average wait ........................ = %f\n", wait);
+        if(i==CONTROL_UNIT) {
+            printf("External arrivals..................=%d\n", blocks[i].total_external_arrivals);
+        }
         if (i == VIDEO_UNIT) {
-            printf("Average wait (2)..................... = %6.6f\n", blocks[i].area.node / blocks[i].total_arrivals);
+            printf("Average wait (2)..................... = %f\n", blocks[i].area.node / blocks[i].total_arrivals);
             printf("Number bypassed ..................... = %d\n", blocks[i].total_bypassed);
         }
-        printf("Average delay ....................... = %6.6f\n", delay);
-        printf("Average service time ................ = %6.6f\n", service);
+        printf("Average delay ....................... = %f\n", delay);
+        printf("Average service time ................ = %f\n", service);
 
-        printf("Average # in the queue .............. = %6.6f\n", blocks[i].area.queue / currentClock);
-        printf("Average # in the node ............... = %6.6f\n", blocks[i].area.node / currentClock);
+        printf("Average # in the queue .............. = %f\n", blocks[i].area.queue / currentClock);
+        printf("Average # in the node ............... = %f\n", blocks[i].area.node / currentClock);
 
         printf("\n    server     utilization     avg service\n");
         double p = 0;

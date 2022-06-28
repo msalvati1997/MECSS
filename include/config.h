@@ -1,28 +1,20 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 2
+#define NUM_METRICS 5
 #define START 0.0
-#define STOP  20.0 * 24.0 * 60.0 * 60.0
+#define STOP  10.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
-#define WLAN_P 0.11
-#define INTERARRIVAL_TIME 170.0
-
-#define TH_CONTROL_UNIT 109.8873675
-#define TH_VIDEO 49.8873675
-#define TH_WLAN 65.9324202
-#define TH_ENODE 43.9549468
-#define TH_EDGE TH_WLAN+TH_ENODE
-#define TH_CLOUD TH_EDGE
+#define INTERARRIVAL_TIME 25.0
 
 //services time 
-#define CONTROL_UNIT_SERVICE_TIME 0.0113674698/2
-#define VIDEO_SERVICE_TIME  0.014515384  //acquisizione di un frame da video service
-#define WLAN_FRAME_UPLOAD_TIME  0.0629 
-#define ENODE_FRAME_UPLOAD_TIME 0.1887
-#define EDGE_PROCESSING_TIME 0.0125799999
-#define CLOUD_PROCESSING_TIME 0.0673928571
+#define CONTROL_UNIT_SERVICE_TIME 15.0
+#define VIDEO_SERVICE_TIME  20.0 //acquisizione di un frame da video service
+#define WLAN_FRAME_UPLOAD_TIME 10.0 
+#define ENODE_FRAME_UPLOAD_TIME 25.0
+#define EDGE_PROCESSING_TIME  30.0
+#define CLOUD_PROCESSING_TIME  10.0
 
 
 //delay
@@ -38,10 +30,10 @@
 #define EXTERNAL 6  //arrivo esterno
 #define INTERNAL 7 //arrivo interno 
 #define EXIT 32
-#define P_WLAN 0.6
+#define P_WLAN_CHOICE 0.79
 #define P_OFF_WLAN 0.11
 // Numero di ripetizioni e batch
-#define NUM_REPETITIONS 15
+#define NUM_REPETITIONS 2
 #define BATCH_B 1024
 #define BATCH_K 128
 
@@ -113,6 +105,7 @@ struct block_t {
 
     int batch_arrivals;
     int total_arrivals;
+    int total_external_arrivals;
     int total_completions;
     int total_bypassed;
     int total_dropped;
