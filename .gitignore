@@ -6,3 +6,5 @@ out
 .vscode/settings.json
 results.csv
 .vscode/targets.log
+continuos_finite.csv
+results_for_blocks.csv
