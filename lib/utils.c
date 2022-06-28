@@ -24,8 +24,8 @@ double E(int c, double a)
 
 
 // Inserisce una nuova linea nel file csv specificato
-void *append_on_csv(FILE *fpt, double ts,double p) {
-    fprintf(fpt, "%2.6f; %2.6f\n", ts, p);
+void *append_on_csv(FILE *fpt, double *ts) {
+    fprintf(fpt, "%2.6f, %2.6f\n", ts[1], ts[0]);
     return fpt;
 }
 
@@ -36,5 +36,11 @@ void *append_on_csv_v2(FILE *fpt, double ts, double p) {
 }
 // Apre un file csv e ritorna il puntatore a quel file
 
-
+// Inserisce una nuova linea nel file csv specificato
+void *append_on_csv3(FILE *fpt, double **ts, int rep) {
+    for(int i=0;i<6;i++) {
+      fprintf(fpt, "sim n. %d ;%2.6f; %2.6f; %2.6f; %2.6f;%2.6f; %2.6f;%2.6f; %2.6f;%2.6f; %2.6f;%2.6f\n",rep, ts[i][0],ts[i][1],ts[i][2],ts[i][3],ts[i][4],ts[i][5],ts[i][6],ts[i][7],ts[i][8],ts[i][9],ts[i][10]);
+    }
+    return fpt;
+}
 

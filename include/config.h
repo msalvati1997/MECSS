@@ -1,12 +1,12 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 5
+#define NUM_METRICS 2
 #define START 0.0
 #define STOP  10.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
-#define INTERARRIVAL_TIME 25.0
+#define INTERARRIVAL_TIME 50.0
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 15.0
@@ -37,6 +37,8 @@
 #define BATCH_B 1024
 #define BATCH_K 128
 
+#define NUM_METRICS_BLOCKS 12
+
 #define handle_error(msg)   \
     do {                    \
         perror(msg);        \
@@ -50,7 +52,8 @@ typedef struct complement_t compl;
 typedef struct job_t job;
 typedef struct sorted_completions_t sorted_completions;
 static const sorted_completions empty_sorted;
-double statistics[NUM_REPETITIONS];
+double statistics[NUM_REPETITIONS][NUM_METRICS];
+double block_statistics[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //data structure
 //Struttura che mantiene il clock

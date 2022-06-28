@@ -50,16 +50,19 @@ void print_sorted_list();
 void finite_horizon_run(int stop_time, int repetition);
 void finite_horizon_simulation(int stop_time, int repetitions);
 void calculate_statistics_clock(block blocks[], double currentClock);
+void calculate_statistics_for_each_block(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS], int rep);
 void print_statistics(double currentClock);
-void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS], int rep);
+void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep);
 void clear_environment();
 void reset_statistics();
 int calculate_energy_consumption();
 void initialize();
 void print_line_release();
 void write_rt_csv_finite();
-void *append_on_csv(FILE *fpt, double ts, double p);
+void *append_on_csv(FILE *fpt, double *ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
+void *append_on_csv3(FILE *fpt, double **ts, int p);
+
 /////////////////////////////////////////////////////////////////////////////////////
 char* stringFromEnum(int f) {
 
@@ -547,7 +550,8 @@ void finite_horizon_run(int stop_time, int repetition) {
         }
     }
     //calculate statistic finali
-   calculate_statistics_fin(blocks, clock.current, statistics, repetition);
+   calculate_statistics_fin(blocks, clock.current, &statistics, repetition);
+   calculate_statistics_for_each_block(blocks,clock.current,&block_statistics, repetition);
     //calcolo bilanciamento energetico 
    print_statistics(clock.current);
    DEBUG_PRINT("fine\n");
@@ -669,7 +673,7 @@ void print_statistics(double currentClock) {
 }
 
 // Calcola le statistiche specificate
-void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS], int rep) {
+void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep) {
     DEBUG_PRINT("calculate_statistics_fin\n");
     double visit_rt = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
@@ -691,7 +695,47 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         visit_rt += wait * visit;
         double utilization = lambda_i/(mu);
     }
-    rt_arr[rep] = visit_rt;
+    rt_arr[rep][0] = clock.current;
+    rt_arr[rep][1]= visit_rt;
+    DEBUG_PRINT("print statistiche finali\n");
+}
+
+// Calcola le statistiche specificate per ogni blocco 
+void calculate_statistics_for_each_block(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS], int rep) {
+    DEBUG_PRINT("calculate_statistics_fin\n");
+    double visit_rt = 0;
+    
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+      
+        int arr = blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / blocks[i].total_arrivals;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = my_min(mu, lambda_i);
+        double visit = throughput / external_arrival_rate;
+        visit_rt += wait * visit;
+        double utilization = lambda_i/(mu);
+        rt_arr[rep][i][0]=arr;
+        rt_arr[rep][i][1]=r_arr;
+        rt_arr[rep][i][2]=jq;
+        rt_arr[rep][i][3]=inter;
+        rt_arr[rep][i][4]=wait;
+        rt_arr[rep][i][5]=delay;
+        rt_arr[rep][i][6]=service;
+        rt_arr[rep][i][7]=lambda_i;
+        rt_arr[rep][i][8]=mu;
+        rt_arr[rep][i][9]=throughput;
+        rt_arr[rep][i][10]=visit;
+        rt_arr[rep][i][11]=utilization;
+    }
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -889,14 +933,35 @@ int main(void) {
 // Scrive i tempi di risposta a tempo finito su un file csv
 void write_rt_csv_finite() {
     FILE *csv;
+    FILE *csv2;
     char* filename = "results.csv";
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
+     fprintf(csv, "response time,clock time\n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
-            append_on_csv(csv, i, statistics[i]);
+            append_on_csv(csv, statistics[i]);
         }
         fclose(csv);
+    }
+    char* filename2 = "results_for_blocks.csv";
+    csv2 = open_csv(filename2);
+    if(csv2 != NULL){
+        DEBUG_PRINT("file exist!\n");
+        for (int j = 0; j < NUM_REPETITIONS; j++) {
+             fprintf(csv2,"sim. n : %d\n",j);
+             fprintf(csv2,"arr,r_arr,jq,inter,wait,delay,service,lambda_i,mu,throughut,visit,utilization\n");
+             for(int i=0;i<6;i++) {
+               for(int k=0;k<NUM_METRICS_BLOCKS;k++) {
+                  if(k==NUM_METRICS_BLOCKS-1) {
+                      fprintf(csv2," %f \n", block_statistics[j][i][k]);
+                  } else {
+                      fprintf(csv2," %f ,", block_statistics[j][i][k]);
+                  }
+               } 
+             }
+        }
+        fclose(csv2);
     }
  }
 
