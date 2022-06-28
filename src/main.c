@@ -55,6 +55,7 @@ void print_statistics(double currentClock);
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep);
 void clear_environment();
 void reset_statistics();
+double ts_mean();
 double calculate_energy_consumption();
 void initialize();
 void print_line_release();
@@ -771,24 +772,33 @@ void reset_statistics() {
     }
 }
 
+void save_on_csv_mean() {
+   double energy_cs =calculate_energy_consumption();
+   double ts= ts_mean();
+   FILE* csv;
+   csv = open_csv("mean_result.csv");
+   fprintf(csv,"mean response time (ms), energy consuption mean (kWatt)\n");
+   fprintf(csv,"%f , %f \n", ts, energy_cs);
+   fclose(csv);
+}
 
 
 //Calcola l'energia consumata dal sistema (capire come aggiornare vari'abili per ogni esecuzione)
 double calculate_energy_consumption() {
     double m;
-    for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
+    for(int i= 0; i<NUM_REPETITIONS; i++){
         m+= statistics[i][1];
     }
-    m = m / sizeof(statistics)/sizeof(double);
+    m = m / NUM_REPETITIONS;
     return ENERGY_SUM*3600*m; //h in s
 }
 
 double ts_mean(){
     double m;
-    for(int i= 0; i<sizeof(statistics)/sizeof(double); i++){
+    for(int i= 0; i<NUM_REPETITIONS; i++){
         m+= statistics[i][1];
     }
-    m = m / sizeof(statistics)/sizeof(double);
+    m = m / NUM_REPETITIONS;
     return m;
 }
 
@@ -948,6 +958,7 @@ void initialize() {
 int main(void) {
     init_csv=0;
     finite_horizon_simulation(STOP, NUM_REPETITIONS);
+    save_on_csv_mean();
 }
 
 

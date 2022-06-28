@@ -3,7 +3,7 @@
 #define NUM_BLOCKS 6
 #define NUM_METRICS 3
 #define START 0.0
-#define STOP  10.0 * 24.0 * 60.0 * 60.0
+#define STOP  50.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
 #define INTERARRIVAL_TIME 50.0
@@ -41,7 +41,7 @@
 #define P_WLAN_CHOICE 0.79
 #define P_OFF_WLAN 0.11
 // Numero di ripetizioni e batch
-#define NUM_REPETITIONS 2
+#define NUM_REPETITIONS 128
 #define BATCH_B 1024
 #define BATCH_K 128
 
