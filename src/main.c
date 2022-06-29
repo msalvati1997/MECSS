@@ -10,7 +10,8 @@
 #include <stdlib.h>  
 
 #ifdef DEBUG
-#define DEBUG_PRINT(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( false )
+#define DEBUG_PRINT(...) do{ \
+        printf( __VA_ARGS__ ); } while( false )
 #else
 #define DEBUG_PRINT(...) do{ } while ( false )
 #endif
@@ -21,7 +22,8 @@ COSE DA FARE:
 - aggiungere funzione calcolo dispendio energetico
 */
 // Genera un tempo di arrivo secondo la distribuzione Esponenziale
-struct clock_t clock;                          // Mantiene le informazioni sul clock di simulazione
+struct clock_t clock;                       
+// Mantiene le informazioni sul clock di simulazione
 ///////////////////////////////////////////////////////////////////////////////////////
 
 //FUNCTIONS
@@ -31,13 +33,14 @@ char* stringFromEnum2(int f);
 void printJobInfo(job * j);
 int deleteElement(sorted_completions *compls, compl completion);
 int getDestination(enum block_types from, int type);
-int routing_from_control_unit();
+int routing_to_cloud();
 void intermittent_wlan();
 int binarySearch(sorted_completions *compls, int low, int high, compl completion);
 FILE *open_csv(char *filename);
 FILE *open_csv_appendMode(char *filename);
 double getArrival(double current);
 void print_line(); 
+void allocate_memory() ;
 double getService(int type_service, int stream);
 void enqueue(block *block_t, double arrival, int type);
 void printQueue(job *j);
@@ -63,6 +66,7 @@ void write_rt_csv_finite();
 void *append_on_csv(FILE *fpt, double *ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
 void *append_on_csv3(FILE *fpt, double **ts, int p);
+void deallocate_memory();
 
 /////////////////////////////////////////////////////////////////////////////////////
 char* stringFromEnum(int f) {
@@ -103,20 +107,22 @@ int insertSorted(sorted_completions *compls, compl completion) {
 int getDestination(enum block_types from, int type) {
     switch (from) {
         case CONTROL_UNIT:
-            if(type==EXTERNAL) {  //external  
-                DEBUG_PRINT("JOB SERVITO EXTERNAL -> DIRECTED TO VIDEO UNIT\n");
+            if(type==INTERNAL) {   //ROUTING TO VIDEO - INTERNAL JOB
+                DEBUG_PRINT("JOB SERVITO  -> DIRECTED TO VIDEO UNIT\n");
                 return VIDEO_UNIT;
             }
-            if(type==INTERNAL) { //internal 
-                DEBUG_PRINT("JOB  SERVITO INTERNAL -> DIRECTED TO CLOUD\n");
-                int ret = routing_from_control_unit();
+            if(type==EXTERNAL) {  //ROUTING TO CLOUD -EXTERNAL JOB
+                DEBUG_PRINT("JOB  SERVITO  -> DIRECTED TO CLOUD\n");
+                int ret = routing_to_cloud();
                 DEBUG_PRINT("ROUTING FROM CONTROL UNIT TO %s\n", stringFromEnum(ret));
                 return ret;
             } else {
                 return -1;
             }
         case VIDEO_UNIT:
-            return CONTROL_UNIT;
+              int ret = routing_to_cloud();
+              DEBUG_PRINT("ROUTING FROM VIDEO UNIT TO %s\n", stringFromEnum(ret));
+              return ret;
         case WLAN_UNIT:
             return EDGE_UNIT;
         case ENODE_UNIT:
@@ -205,11 +211,11 @@ void enqueue(block *block_t, double arrival, int type) {
     j->type = type;
     if (block_t->tail){  // Appendi alla coda se esiste, altrimenti è la testa
         DEBUG_PRINT("JOB PRESENTI IN CODA DI %s APPENDO ALLA CODA\n",stringFromEnum(block_t->type));
-        block_t->tail->next = malloc(sizeof(job));
+        //block_t->tail->next = malloc(sizeof(job));
         block_t->tail->next = j; 
     }else{
         DEBUG_PRINT("JOB NON PRESENTI IN CODA DI %s- APPENDO IN TESTA\n", stringFromEnum(block_t->type));
-        block_t->head_service=malloc(sizeof(job));
+        //block_t->head_service=malloc(sizeof(job));
         block_t->head_service = j;
     }
     
@@ -223,12 +229,12 @@ void enqueue(block *block_t, double arrival, int type) {
 }
 
 void printQueue(job *j) {
-    job *tmp = (job *)malloc(sizeof(job));
-    tmp=j;
-    printJobInfo(tmp);
-    while(tmp->next!=NULL) {
-        tmp = tmp->next;
-        printJobInfo(tmp);
+    //job *tmp = (job *)malloc(sizeof(job));
+    //tmp=j;
+    printJobInfo(j);
+    while(j->next!=NULL) {
+        j = j->next;
+        printJobInfo(j);
     }
 }
 
@@ -254,7 +260,6 @@ int dequeue(block *block) {
         DEBUG_PRINT("--------->EMPTY QUEUE\n");
     }
 
-  
     return type;
 }
 
@@ -279,11 +284,19 @@ server *findFreeServer(int block_type) {
 void process_arrival() {
     print_line();
     DEBUG_PRINT("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
-    blocks[0].total_external_arrivals++;
+    //blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
+    blocks[0].total_arrivals++;
 
     server *s = findFreeServer(0);
     // C'è un servente libero, quindi genero il completamento
+    int type_of = EXTERNAL;
+    double random = Uniform(0,1);
+    if(random<=P_INTERNAL) {
+        type_of=INTERNAL; //JOB WILL BE DIRECTED TO VIDEO UNIT
+    } else {
+        type_of=EXTERNAL; //JOB WILL BE DIRECTED TO CLOUD UNIT
+    }
     if (s != NULL) {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(0), serviceTime);
@@ -296,9 +309,9 @@ void process_arrival() {
         s->block->area.service += serviceTime;
         s->sum.served++;
         insertSorted(&global_sorted_completions, c);
-        enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
+        enqueue(&blocks[0], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
     } else {
-        enqueue(&blocks[0], clock.arrival,EXTERNAL);  // lo appendo nella linked list di job del blocco 
+        enqueue(&blocks[0], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
         blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
     clock.arrival = getArrival(clock.current);  // Genera prossimo arrivo
@@ -440,7 +453,7 @@ void process_completion(compl c) {
 
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
-int routing_from_control_unit() {
+int routing_to_cloud() {
    intermittent_wlan();
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
            return ENODE_UNIT; 
@@ -544,7 +557,7 @@ void finite_horizon_run(int stop_time, int repetition) {
         } else {
             process_completion(*nextCompletion);
         }
-        if (clock.current >= (n-1) * 1200 && clock.current < n * 1200 && completed>5) {            
+        if (clock.current >= (n-1) * 300 && clock.current < n * 300 && completed>16) {            
             DEBUG_PRINT("calculate statistic interno \n ");
             calculate_statistics_clock(blocks, clock.current);
             n++;
@@ -571,11 +584,13 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
     DEBUG_PRINT("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     DEBUG_PRINT("\n\n");
     for (int r = 0; r < repetitions; r++) {
+        allocate_memory();
         initialize();
         print_line_release();
         printf("\nSIMULAZIONE CICLO NUMERO %d\n", r);
         finite_horizon_run(stop_time, r);
         clear_environment();
+        deallocate_memory();
     }
     DEBUG_PRINT("write to csv\n");
     write_rt_csv_finite();
@@ -603,7 +618,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double delay = blocks[i].area.queue / r_arr;
         double service = blocks[i].area.service / r_arr;
 
-        double external_arrival_rate = 1 / (currentClock / blocks[0].total_external_arrivals);
+        double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
         double throughput = my_min(mu, lambda_i);
@@ -646,9 +661,6 @@ void print_statistics(double currentClock) {
         printf("Average interarrivals................ = %f\n", inter);
 
         printf("Average wait ........................ = %f\n", wait);
-        if(i==CONTROL_UNIT) {
-            printf("External arrivals..................=%d\n", blocks[i].total_external_arrivals);
-        }
         if (i == VIDEO_UNIT) {
             printf("Average wait (2)..................... = %f\n", blocks[i].area.node / blocks[i].total_arrivals);
             printf("Number bypassed ..................... = %d\n", blocks[i].total_bypassed);
@@ -666,8 +678,8 @@ void print_statistics(double currentClock) {
         server_list=malloc(sizeof(server*));
         *(server_list) = malloc(sizeof(server)*blocks[i].num_servers);
         server_list = blocks[i].serv;
+        server *s = malloc(sizeof(server));
         for (int j = 0; j < blocks[i].num_servers; j++) {
-            server *s = malloc(sizeof(server));
             s = (*server_list+j);
             if(s != NULL){
                 printf("    %d     %f     %f\n", s->id, (s->sum.service / currentClock), (s->sum.service / s->sum.served));
@@ -826,28 +838,28 @@ void initialize() {
     }
 
    DEBUG_PRINT("blocks initialized  \n");
-   control_unit=calloc(1,sizeof(server*));
-   (*control_unit)=calloc(1,sizeof(server));
+  // control_unit=calloc(1,sizeof(server*));
+  // (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
    
-   video_unit=calloc(2,sizeof(server*));
-   (*video_unit)=calloc(2,sizeof(server));
+   //video_unit=calloc(2,sizeof(server*));
+   //(*video_unit)=calloc(2,sizeof(server));
    blocks[1].num_servers=2; //video 
 
-   wlan_unit=calloc(2,sizeof(server*));
-   (*wlan_unit)=calloc(2,sizeof(server));
+   //wlan_unit=calloc(2,sizeof(server*));
+  // (*wlan_unit)=calloc(2,sizeof(server));
    blocks[2].num_servers=2; //wlan 
  
-   enode_unit=calloc(1,sizeof(server*));
-   (*enode_unit)=calloc(1,sizeof(server));
+ //  enode_unit=calloc(1,sizeof(server*));
+ //  (*enode_unit)=calloc(1,sizeof(server));
    blocks[3].num_servers=1; //enode 
 
-   edge_unit=calloc(4,sizeof(server*));
-   (*edge_unit)=calloc(4,sizeof(server));
+  // edge_unit=calloc(4,sizeof(server*));
+  // (*edge_unit)=calloc(4,sizeof(server));
    blocks[4].num_servers=4; //edge
 
-   cloud_unit=calloc(1,sizeof(server*));
-   (*cloud_unit)=calloc(1,sizeof(server));
+ //  cloud_unit=calloc(1,sizeof(server*));
+  // (*cloud_unit)=calloc(1,sizeof(server));
    blocks[5].num_servers=1; //cloud
 
    DEBUG_PRINT("unit starting initialized \n");
@@ -870,7 +882,7 @@ void initialize() {
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
    streamID+=streamID;
-   (*control_unit)->block=malloc(sizeof(block));
+  // (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
    
 
@@ -880,7 +892,7 @@ void initialize() {
        (*video_unit+i)->online=ONLINE;
        (*video_unit+i)->loss=LOSS_SYSTEM;
        (*video_unit+i)->stream=streamID++;
-       (*video_unit+i)->block=malloc(sizeof(block));
+      // (*video_unit+i)->block=malloc(sizeof(block));
        (*video_unit+i)->block=&blocks[1];  
        streamID+=streamID;
    }
@@ -892,7 +904,7 @@ void initialize() {
          (*wlan_unit+i)->online=ONLINE;
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
          (*wlan_unit+i)->stream=streamID++;
-         (*wlan_unit+i)->block=malloc(sizeof(block));
+         //(*wlan_unit+i)->block=malloc(sizeof(block));
          (*wlan_unit+i)->block=&blocks[2];
          streamID+=streamID;
    }
@@ -901,7 +913,7 @@ void initialize() {
    (*enode_unit)->online=ONLINE;
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
    (*enode_unit)->stream=streamID++;
-   (*enode_unit)->block=malloc(sizeof(block));
+  // (*enode_unit)->block=malloc(sizeof(block));
    (*enode_unit)->block=&blocks[3];
    streamID+=streamID;
    
@@ -910,7 +922,7 @@ void initialize() {
           (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
-          (*edge_unit+i)->block=malloc(sizeof(block));
+         // (*edge_unit+i)->block=malloc(sizeof(block));
           (*edge_unit+i)->block=&blocks[4];
           streamID+=streamID;
    }
@@ -919,20 +931,20 @@ void initialize() {
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
-   (*cloud_unit)->block=malloc(sizeof(block));
+ //  (*cloud_unit)->block=malloc(sizeof(block));
    (*cloud_unit)->block=&blocks[5];
 
-   blocks[0].serv = malloc(sizeof(server*));
+  // blocks[0].serv = malloc(sizeof(server*));
    blocks[0].serv=control_unit;
-   blocks[1].serv = malloc(sizeof(server*)*2);
+  // blocks[1].serv = malloc(sizeof(server*)*2);
    blocks[1].serv=video_unit;
-   blocks[2].serv = malloc(sizeof(server*)*2);
+  // blocks[2].serv = malloc(sizeof(server*)*2);
    blocks[2].serv=wlan_unit;
-   blocks[3].serv = malloc(sizeof(server*));
+  // blocks[3].serv = malloc(sizeof(server*));
    blocks[3].serv=enode_unit;
-   blocks[4].serv = malloc(sizeof(server*)*4);
+  // blocks[4].serv = malloc(sizeof(server*)*4);
    blocks[4].serv =edge_unit;
-   blocks[5].serv = malloc(sizeof(server*));
+  // blocks[5].serv = malloc(sizeof(server*));
    blocks[5].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
 
@@ -961,7 +973,47 @@ int main(void) {
     save_on_csv_mean();
 }
 
+void allocate_memory() {
+   control_unit=calloc(1,sizeof(server*));
+   (*control_unit)=calloc(1,sizeof(server));
+   video_unit=calloc(2,sizeof(server*));
+   (*video_unit)=calloc(2,sizeof(server));
+   wlan_unit=calloc(2,sizeof(server*));
+   (*wlan_unit)=calloc(2,sizeof(server));
+   enode_unit=calloc(1,sizeof(server*));
+   (*enode_unit)=calloc(1,sizeof(server));
+   edge_unit=calloc(4,sizeof(server*));
+   (*edge_unit)=calloc(4,sizeof(server));
+   cloud_unit=calloc(1,sizeof(server*));
+   (*cloud_unit)=calloc(1,sizeof(server));
+   (*control_unit)->block=malloc(sizeof(block));
+   (*video_unit)->block=malloc(sizeof(block));
+   (*video_unit+1)->block=malloc(sizeof(block));
+   (*wlan_unit)->block=malloc(sizeof(block));
+   (*wlan_unit+1)->block=malloc(sizeof(block));
+   (*enode_unit)->block=malloc(sizeof(block));
+   (*edge_unit)->block=malloc(sizeof(block));
+   (*edge_unit+1)->block=malloc(sizeof(block));
+   (*edge_unit+2)->block=malloc(sizeof(block));
+   (*edge_unit+3)->block=malloc(sizeof(block));
+   (*cloud_unit)->block=malloc(sizeof(block));
+   blocks[0].serv = malloc(sizeof(server*));
+   blocks[1].serv = malloc(sizeof(server*)*2);
+   blocks[2].serv = malloc(sizeof(server*)*2);
+   blocks[3].serv = malloc(sizeof(server*));
+   blocks[4].serv = malloc(sizeof(server*)*4);
+   blocks[5].serv = malloc(sizeof(server*));
+}
 
+
+void deallocate_memory() {
+   free(control_unit);
+   free(video_unit);
+   free(wlan_unit);
+   free(enode_unit);
+   free(edge_unit);
+   free(cloud_unit);   
+}
 // Scrive i tempi di risposta a tempo finito su un file csv
 void write_rt_csv_finite() {
     FILE *csv;
