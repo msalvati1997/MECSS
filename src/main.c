@@ -737,7 +737,7 @@ void calculate_statistics_for_each_block(block blocks[], double currentClock, do
         double throughput = my_min(mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
-        double utilization = lambda_i/(mu);
+        double utilization = lambda_i/(blocks[i].num_servers*mu);
         rt_arr[rep][i][0]=arr;
         rt_arr[rep][i][1]=r_arr;
         rt_arr[rep][i][2]=jq;
