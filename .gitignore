@@ -8,3 +8,4 @@ results.csv
 .vscode/targets.log
 continuos_finite.csv
 results_for_blocks.csv
+mean_result.csv

@@ -16,16 +16,10 @@
 #define DEBUG_PRINT(...) do{ } while ( false )
 #endif
 
-/*@todo 
-COSE DA FARE:
-- funzione che calcola dispendio energetico teorico 
-- aggiungere funzione calcolo dispendio energetico
-*/
-// Genera un tempo di arrivo secondo la distribuzione Esponenziale
+
 struct clock_t clock;                       
 // Mantiene le informazioni sul clock di simulazione
 ///////////////////////////////////////////////////////////////////////////////////////
-
 //FUNCTIONS
 
 char* stringFromEnum(int f);
@@ -564,8 +558,8 @@ void finite_horizon_run(int stop_time, int repetition) {
         }
     }
     //calculate statistic finali
-   calculate_statistics_fin(blocks, clock.current, &statistics, repetition);
-   calculate_statistics_for_each_block(blocks,clock.current,&block_statistics, repetition);
+   calculate_statistics_fin(blocks, clock.current, statistics, repetition);
+   calculate_statistics_for_each_block(blocks,clock.current,block_statistics, repetition);
     //calcolo bilanciamento energetico 
    print_statistics(clock.current);
    DEBUG_PRINT("fine\n");
