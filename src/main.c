@@ -420,9 +420,9 @@ void process_completion(compl c) {
         }
      if(destination == VIDEO_UNIT) {
         // Se il blocco destinatario ha un servente libero, generiamo un tempo di completamento, altrimenti aumentiamo il numero di job in coda
+        blocks[destination].total_arrivals++;
         freeServer = findFreeServer(destination);
         if (freeServer != NULL) {
-            blocks[destination].total_arrivals++;
             blocks[destination].jobInBlock++;
             enqueue(&blocks[destination], c.value,INTERNAL);
             freeServer->block=&blocks[destination];
@@ -607,8 +607,9 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
     for (int i = 0; i < NUM_BLOCKS; i++) {
         int arr = blocks[i].total_arrivals;
         int jq = blocks[i].jobInQueue;
-        double inter = currentClock / blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
+        double inter = currentClock / r_arr;
+        
 
         double wait = blocks[i].area.node / arr;
         double delay = blocks[i].area.queue / r_arr;
@@ -626,6 +627,12 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
     fclose(csv);
 }
 
+double print_ploss() {
+    double loss_perc = (float)blocks[VIDEO_UNIT].total_bypassed / (float)blocks[VIDEO_UNIT].total_arrivals;
+    //printf("P_LOSS: %f\n", loss_perc);
+    return loss_perc;
+}
+
 // Stampa a schermo le statistiche calcolate per ogni singolo blocco
 void print_statistics(double currentClock) {
     double system_total_wait = 0;
@@ -634,7 +641,7 @@ void print_statistics(double currentClock) {
         int arr = blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
         int jq = blocks[i].jobInQueue;
-        double inter = currentClock / blocks[i].total_arrivals;
+        double inter = currentClock / r_arr;
 
         double wait = blocks[i].area.node / arr;
         double delay = blocks[i].area.queue / r_arr;
@@ -660,12 +667,14 @@ void print_statistics(double currentClock) {
         if (i == VIDEO_UNIT) {
             printf("Average wait (2)..................... = %f\n", blocks[i].area.node / blocks[i].total_arrivals);
             printf("Number bypassed ..................... = %d\n", blocks[i].total_bypassed);
+            printf("Ploss ..................... = %f\n", print_ploss());
         }
         printf("Average delay ....................... = %f\n", delay);
         printf("Average service time ................ = %f\n", service);
 
         printf("Average # in the queue .............. = %f\n", blocks[i].area.queue / currentClock);
         printf("Average # in the node ............... = %f\n", blocks[i].area.node / currentClock);
+
 
         printf("\n    server     utilization     avg service\n");
         double p = 0;
@@ -695,7 +704,7 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         int arr = blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
         int jq = blocks[i].jobInQueue;
-        double inter = currentClock / blocks[i].total_arrivals;
+        double inter = currentClock / r_arr;
 
         double wait = blocks[i].area.node / arr;
         double delay = blocks[i].area.queue / r_arr;
@@ -719,20 +728,21 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
 void calculate_statistics_for_each_block(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS], int rep) {
     DEBUG_PRINT("calculate_statistics_fin\n");
     double visit_rt = 0;
-    
+    double lambda_i;
+
     for (int i = 0; i < NUM_BLOCKS; i++) {
       
         int arr = blocks[i].total_arrivals;
         int r_arr = arr - blocks[i].total_bypassed;
         int jq = blocks[i].jobInQueue;
-        double inter = currentClock / blocks[i].total_arrivals;
+        double inter = currentClock / (r_arr);
 
         double wait = blocks[i].area.node / arr;
         double delay = blocks[i].area.queue / r_arr;
         double service = blocks[i].area.service / r_arr;
 
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
-        double lambda_i = 1 / inter;
+        lambda_i = 1 / inter;    
         double mu = 1 / service;
         double throughput = my_min(mu, lambda_i);
         double visit = throughput / external_arrival_rate;
