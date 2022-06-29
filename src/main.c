@@ -17,9 +17,11 @@
 #endif
 
 
+// Genera un tempo di arrivo secondo la distribuzione Esponenziale
 struct clock_t clock;                       
 // Mantiene le informazioni sul clock di simulazione
 ///////////////////////////////////////////////////////////////////////////////////////
+
 //FUNCTIONS
 
 char* stringFromEnum(int f);

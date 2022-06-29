@@ -6,14 +6,15 @@
 #define STOP  20.0 * 24.0 * 60.0 * 60.0
 #define INFINITY (100.0 * STOP)
 
-#define INTERARRIVAL_TIME 50.0
+#define INTERARRIVAL_TIME 16.0
+
 
 //services time 
 #define CONTROL_UNIT_SERVICE_TIME 15.0
-#define VIDEO_SERVICE_TIME  20.0 //acquisizione di un frame da video service
-#define WLAN_FRAME_UPLOAD_TIME 10.0 
-#define ENODE_FRAME_UPLOAD_TIME 25.0
-#define EDGE_PROCESSING_TIME  30.0
+#define VIDEO_SERVICE_TIME  35.0 //acquisizione di un frame da video service
+#define WLAN_FRAME_UPLOAD_TIME 30.0 
+#define ENODE_FRAME_UPLOAD_TIME 40.0
+#define EDGE_PROCESSING_TIME  35.0
 #define CLOUD_PROCESSING_TIME  10.0
 
 //Power Consuming in kWh
@@ -154,7 +155,7 @@ struct complement_t {
 
 // Struttura che mantiene la lista ordinata di tutti i completamenti
 struct sorted_completions_t{
-    compl sorted_list[11];
+    compl sorted_list[150];
     int num_completions;
 } ;
 
