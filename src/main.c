@@ -450,7 +450,7 @@ void process_completion(compl c) {
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
 int routing_to_cloud() {
-   intermittent_wlan();
+  // intermittent_wlan();
    if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
            return ENODE_UNIT; 
         }      
@@ -621,7 +621,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit; 
     }
-    double energy =ENERGY_SUM*visit_rt*3600;
+    double energy =ENERGY_SUM*visit_rt*3.6;
     fprintf(csv, "%2.6f,%2.6f, %2.6f\n",clock.current, visit_rt, energy);
     fclose(csv);
 }
@@ -711,7 +711,7 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
     }
     rt_arr[rep][0] = clock.current;
     rt_arr[rep][1]= visit_rt;
-    rt_arr[rep][2]=ENERGY_SUM*3600*visit_rt;
+    rt_arr[rep][2]=ENERGY_SUM*3.6*visit_rt;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -798,7 +798,7 @@ double calculate_energy_consumption() {
         m+= statistics[i][1];
     }
     m = m / NUM_REPETITIONS;
-    return ENERGY_SUM*3600*m; //h in s
+    return ENERGY_SUM*3.6*m; //h in s
 }
 
 double ts_mean(){
