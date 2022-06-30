@@ -457,18 +457,14 @@ void process_completion(compl c) {
 //logica del dispatcher
 int routing_to_cloud() {
   // intermittent_wlan();
-   if(((*wlan_unit)->online==OFFLINE) && ((*wlan_unit+1)->online==OFFLINE)) { //i server della WLAN sono OFFLINE
-           return ENODE_UNIT; 
-        }      
-   else {
-       double random = Uniform(0, 1);
+double random = Uniform(0, 1);
        if(random<=P_WLAN_CHOICE) {
           return WLAN_UNIT;
        } else {
           return ENODE_UNIT;
        }
    }
-}
+
 
 //Thread che disattiva la WLAN essendo un server intermittente 
 void intermittent_wlan() {
@@ -619,11 +615,10 @@ void infinite_horizon_simulation() {
 void find_batch_b() {
     printf("find batch b\n");
     allocate_memory();
-    initialize();
     int b = 64;
     for (b; b < 2058; b = b * 2) {
-       
         clear_environment();
+        initialize();
         ////////////////////
         long seed;
         GetSeed(&seed);
@@ -643,6 +638,7 @@ void find_batch_b() {
         fclose(csv);
         printf("Write statistics to csv\n");
     }
+    //deallocate_memory();
 }
 
 // Esegue un singolo batch ad orizzonte infinito

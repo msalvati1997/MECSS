@@ -9,3 +9,9 @@ results.csv
 continuos_finite.csv
 results_for_blocks.csv
 mean_result.csv
+rt_batch_inf_64.csv
+rt_batch_inf_128.csv
+rt_batch_inf_1024.csv
+rt_batch_inf_256.csv
+rt_batch_inf_512.csv
+rt_batch_inf_2048.csv

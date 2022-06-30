@@ -43,9 +43,9 @@
 #define P_OFF_WLAN 0.11
 #define P_INTERNAL 0.4
 // Numero di ripetizioni e batch
-#define NUM_REPETITIONS 1
+#define NUM_REPETITIONS 128
 #define BATCH_B 1024
-#define BATCH_K 1
+#define BATCH_K 128
 
 #define NUM_METRICS_BLOCKS 12
 
@@ -166,7 +166,7 @@ struct complement_t {
 
 // Struttura che mantiene la lista ordinata di tutti i completamenti
 struct sorted_completions_t{
-    compl sorted_list[150];
+    compl sorted_list[50000];
     int num_completions;
 } ;
 
