@@ -4,19 +4,19 @@ help :
 
 release_finite:
 	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c lib/utils.c -lm -g -o out 
-	./out FINITE
+	./out FINITE > finite.txt
 
 debug_finite:
 	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c lib/utils.c -lm -g -o out -DDEBUG 
-	./out FINITE
+	./out FINITE > finite.txt
 
 release_infinite:
 	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c lib/utils.c -lm -g -o out 
-	./out INFINITE
+	./out INFINITE > infinite.txt
 
 debug_infinite:
 	gcc  src/main.c lib/rvgs.c lib/rvms.c lib/rngs.c lib/utils.c -lm -g -o out -DDEBUG 
-	./out INFINITE
+	./out INFINITE > infinite.txt
 
 clean:
 	rm out

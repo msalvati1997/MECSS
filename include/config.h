@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 1
+#define NUM_METRICS 2
 #define START 0.0
 #define STOP  1.0 * 60.0 * 60.0 * 1000.00
 #define INFINITY (100.0 * STOP)
@@ -23,8 +23,7 @@
 #define WLAN_UNIT_PC 0.008
 #define ENODE_UNIT_PC 0.08
 #define EDGE_UNIT_PC 0.00117
-#define CLOUD_UNIT_PC 1.5
-#define ENERGY_SUM CONTROL_UNIT_PC+VIDEO_UNIT_PC+WLAN_UNIT_PC+ENODE_UNIT_PC+EDGE_UNIT_PC+CLOUD_UNIT_PC
+#define CLOUD_UNIT_PC 0.1
 
 //delay
 #define DELAY_FROM_EDGE_TO_CLOUD 1.0
@@ -44,10 +43,10 @@
 #define P_INTERNAL 0.4
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
-#define BATCH_B 512  //382 //223 //490 //503
-#define BATCH_K 128
+#define BATCH_B 301  //382 //223 //490 //503
+#define BATCH_K 128 
 
-#define NUM_METRICS_BLOCKS 12
+#define NUM_METRICS_BLOCKS 13
 
 #define handle_error(msg)   \
     do {                    \
@@ -67,7 +66,6 @@ double block_statistics[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //data structure
 //Struttura che mantiene il clock
-
 
 double statistics[NUM_REPETITIONS][NUM_METRICS];
 double infinite_statistics[BATCH_K][NUM_METRICS];

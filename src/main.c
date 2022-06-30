@@ -71,6 +71,8 @@ void print_percentage(double part, double total, double oldPart);
 void print_results_infinite();
 void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]);
 /////////////////////////////////////////////////////////////////////////////////////
+double power_consumption[6]={0.0065,0.025,0.008,0.08,0.0017,0.1};
+
 char* stringFromEnum(int f) {
 
     char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
@@ -698,7 +700,7 @@ void infinite_horizon_batch(int b, int k) {
    long seed;
    GetSeed(&seed);
    PlantSeeds(seed);
-    ////////////////// 
+   ///////////////// 
 }
 
 // Calcola le statistiche specificate
@@ -724,9 +726,8 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
         visit_rt += visit * wait;
         dl_arr[pos][i] += delay;
     }
-    //rt_arr[pos][0] = clock.current;
     rt_arr[pos][0]= visit_rt;
-   // rt_arr[pos][2]=ENERGY_SUM*3.6*visit_rt;
+    rt_arr[pos][1] = currentClock;
 }
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
@@ -736,7 +737,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
     FILE *csv;
     csv = open_csv_appendMode(filename);
     if(init_csv==0) {
-        fprintf(csv, "clock current, response time (ms), energy consuption (Kwatt)\n");
+        fprintf(csv, "response time (ms), current time\n");
         init_csv=init_csv+1;
     }
     double visit_rt = 0;
@@ -758,8 +759,8 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit; 
     }
-    double energy =ENERGY_SUM*visit_rt*3.6;
-    fprintf(csv, "%2.6f,%2.6f, %2.6f\n",clock.current, visit_rt, energy);
+    double energy =visit_rt/ 3600.0;
+    fprintf(csv, "%2.6f, %2.6f\n", visit_rt, clock.current);
     fclose(csv);
 }
 
@@ -769,7 +770,7 @@ double print_ploss() {
     return loss_perc;
 }
 
-// Stampa il costo e l'utilizzazione media ad orizzonte infinito
+// Stampa l'utilizzazione media ad orizzonte infinito
 void print_results_infinite() {
 
     double l = 0;
@@ -908,9 +909,8 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         visit_rt += wait * visit;
         double utilization = lambda_i/(blocks[i].num_servers*mu);
     }
-    //rt_arr[rep][0] = clock.current;
     rt_arr[rep][0]= visit_rt;
-   // rt_arr[rep][2]=ENERGY_SUM*3.6*visit_rt;
+    rt_arr[rep][1]= currentClock;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -939,6 +939,7 @@ void calculate_statistics_for_each_block(block blocks[], double currentClock, do
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
         double utilization = lambda_i/(blocks[i].num_servers*mu);
+       // double power_cns = wait * blocks[i].total_completions * power_consumption[i] ;
         rt_arr[rep][i][0]=arr;
         rt_arr[rep][i][1]=r_arr;
         rt_arr[rep][i][2]=jq;
@@ -951,6 +952,7 @@ void calculate_statistics_for_each_block(block blocks[], double currentClock, do
         rt_arr[rep][i][9]=throughput;
         rt_arr[rep][i][10]=visit;
         rt_arr[rep][i][11]=utilization;
+       // rt_arr[rep][i][12]=power_cns;
     }
     DEBUG_PRINT("print statistiche finali\n");
 }
@@ -979,36 +981,6 @@ void reset_statistics() {
         blocks[block_type].area.service = 0;
         blocks[block_type].area.queue = 0;
     }
-}
-
-void save_on_csv_mean() {
-   double energy_cs =calculate_energy_consumption();
-   double ts= ts_mean();
-   FILE* csv;
-   csv = open_csv("mean_result.csv");
-   fprintf(csv,"mean response time (ms), energy consuption mean (kWatt)\n");
-   fprintf(csv,"%f , %f \n", ts, energy_cs);
-   fclose(csv);
-}
-
-
-//Calcola l'energia consumata dal sistema (capire come aggiornare vari'abili per ogni esecuzione)
-double calculate_energy_consumption() {
-    double m;
-    for(int i= 0; i<NUM_REPETITIONS; i++){
-        m+= statistics[i][1];
-    }
-    m = m / NUM_REPETITIONS;
-    return ENERGY_SUM*3.6*m; //h in s
-}
-
-double ts_mean(){
-    double m;
-    for(int i= 0; i<NUM_REPETITIONS; i++){
-        m+= statistics[i][1];
-    }
-    m = m / NUM_REPETITIONS;
-    return m;
 }
 
 
@@ -1171,7 +1143,6 @@ int main(int argc, char **argv) {
     if(strcmp(type,"FINITE")==0) {
       printf("FINITE HORIZON SIMULATION\n");
       finite_horizon_simulation(STOP, NUM_REPETITIONS);
-      save_on_csv_mean();
     } 
     if(strcmp(type, "INFINITE")==0) {
        printf("INFINITE HORIZON SIMULATION\n");
@@ -1233,7 +1204,7 @@ void write_rt_csv_finite() {
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
-     fprintf(csv, "clock time (ms), response time (ms), power consumption kWatt\n");
+     fprintf(csv, "response time (ms), current time \n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, statistics[i]);
         }
