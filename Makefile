@@ -20,6 +20,7 @@ debug_infinite:
 
 clean:
 	rm out
+	rm *.csv
 
 %:
 	@echo Available targets:
