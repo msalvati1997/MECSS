@@ -617,8 +617,13 @@ void infinite_horizon_simulation() {
 
 // Esegue diverse run di batch mean con diversi valori di b
 void find_batch_b() {
+    printf("find batch b\n");
+    allocate_memory();
+    initialize();
     int b = 64;
     for (b; b < 2058; b = b * 2) {
+       
+        clear_environment();
         ////////////////////
         long seed;
         GetSeed(&seed);
@@ -807,7 +812,9 @@ void write_rt_csv_infinite() {
     for (int i = 0; i < NUM_BLOCKS - 1; i++) {
         char *filename_delays= malloc(sizeof(char)*100);
         strcat(filename_delays, "infinite_dl_d_");
-        strcat(filename_delays, atoi(i));
+        char * buffer = malloc(sizeof(char)*20);
+        sprintf(buffer,"%d",i) ;
+        strcat(filename_delays, buffer);
         strcat(filename_delays, ".csv");
         FILE *csv_delays;
         csv_delays = open_csv(filename_delays);
@@ -1164,19 +1171,19 @@ void initialize() {
 int main(int argc, char **argv) {
     init_csv=0;
     char *type=argv[1];
-    if(type="finite") {
+    printf("TYPE : %s\n",type);
+    if(strcmp(type,"FINITE")==0) {
       printf("FINITE HORIZON SIMULATION\n");
       finite_horizon_simulation(STOP, NUM_REPETITIONS);
       save_on_csv_mean();
     } 
-
-    if(type=="infinite") {
-       find_batch_b();
+    if(strcmp(type, "INFINITE")==0) {
        printf("INFINITE HORIZON SIMULATION\n");
+       find_batch_b();
        //infinite_horizon_simulation();
     }
     else {
-        printf("%s\n", type);
+        printf("TYPE OF COMMAND NOT VALID -> %s\n", type);
     }
     return 0;
 }
