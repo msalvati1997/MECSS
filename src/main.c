@@ -559,7 +559,7 @@ void finite_horizon_run(int stop_time, int repetition) {
         } else {
             process_completion(*nextCompletion);
         }
-        if (clock.current >= (n-1) * 300 && clock.current < n * 300 && completed>16) {            
+        if (clock.current >= (n-1) * 5000 && clock.current < n * 5000 && completed>16) {            
             DEBUG_PRINT("calculate statistic interno \n ");
             calculate_statistics_clock(blocks, clock.current);
             n++;
@@ -627,14 +627,16 @@ void find_batch_b() {
         for (int k = 0; k < 128; k++) {
             infinite_horizon_batch(b, k);
         }
-        char filename[100];
-        snprintf(filename, 100, "rt_batch_inf_%d.csv", b);
+
+        char filename[50];
+        sprintf(filename,"rt_batch_inf_%d.csv", b);
         FILE *csv;
         csv = open_csv(filename);
         for (int j = 0; j < 128; j++) {
             append_on_csv(csv, infinite_statistics[j]);
         }
         fclose(csv);
+        printf("Write statistics to csv\n");
     }
 }
 
@@ -786,11 +788,10 @@ void print_results_infinite() {
 }
 
 void write_rt_csv_infinite() {
-    char filename[100];
-    char filename_ploss[100];
+    char * filename= "rt_infinite.csv";
+    char * filename_ploss ="ploss_infinite_slot.csv";
 
-    snprintf(filename, 100, "rt_infinite_slot_.csv");
-    snprintf(filename_ploss, 100, "ploss_infinite_slot_.csv");
+
     FILE *csv;
     FILE *csv_ploss;
     csv = open_csv(filename);
@@ -804,8 +805,10 @@ void write_rt_csv_infinite() {
     fclose(csv_ploss);
 
     for (int i = 0; i < NUM_BLOCKS - 1; i++) {
-        char filename_delays[100];
-        snprintf(filename_delays, 100, "infinite_dl_%d.csv",i);
+        char *filename_delays= malloc(sizeof(char)*100);
+        strcat(filename_delays, "infinite_dl_d_");
+        strcat(filename_delays, itoa(i));
+        strcat(filename_delays, ".csv");
         FILE *csv_delays;
         csv_delays = open_csv(filename_delays);
 
@@ -1168,8 +1171,9 @@ int main(int argc, char **argv) {
     } 
 
     if(type=="infinite") {
+       find_batch_b();
        printf("INFINITE HORIZON SIMULATION\n");
-       infinite_horizon_simulation();
+       //infinite_horizon_simulation();
     }
     else {
         printf("%s\n", type);

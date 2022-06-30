@@ -3,7 +3,7 @@
 #define NUM_BLOCKS 6
 #define NUM_METRICS 3
 #define START 0.0
-#define STOP  60.0 * 24.0 * 60.0 * 60.0
+#define STOP  1.0 * 60.0 * 60.0 * 1000.00
 #define INFINITY (100.0 * STOP)
 
 #define INTERARRIVAL_TIME 16.0
