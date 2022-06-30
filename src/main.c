@@ -618,7 +618,7 @@ void find_batch_b() {
     PlantSeeds(231232132);
     int b = 16;
     initialize();       
-    for (b; b <= BATCH_B; b = b * 3) {
+    for (b; b <= BATCH_B; b = b + 1) {
         reset_statistics();
         for (int k = 0; k < BATCH_K; k++) {
             infinite_horizon_batch(b, k);
