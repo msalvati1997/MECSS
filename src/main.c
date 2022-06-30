@@ -59,11 +59,17 @@ double calculate_energy_consumption();
 void initialize();
 void print_line_release();
 void write_rt_csv_finite();
+void write_rt_csv_infinite();
+void *append_on_csv_loss(FILE *fpt, double *ts);
 void *append_on_csv(FILE *fpt, double *ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
 void *append_on_csv3(FILE *fpt, double **ts, int p);
+void append_on_csv_delay(FILE *fpt, double ts);
 void deallocate_memory();
-
+void infinite_horizon_batch(int b, int k);
+void print_percentage(double part, double total, double oldPart);
+void print_results_infinite();
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]);
 /////////////////////////////////////////////////////////////////////////////////////
 char* stringFromEnum(int f) {
 
@@ -592,6 +598,133 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
     write_rt_csv_finite();
 }
 
+// Esegue una simulazione ad orizzonte infinito tramite il metodo delle batch means
+void infinite_horizon_simulation() {
+    printf("\n\n==== Infinite Horizon Simulation | #batch %d====", BATCH_K);
+    
+    int b = BATCH_B;
+    allocate_memory();
+    initialize();
+    for (int k = 0; k < BATCH_K; k++) {
+        infinite_horizon_batch(b, k);
+        reset_statistics();
+        print_percentage(k, BATCH_K, k - 1);
+    }
+    write_rt_csv_infinite();
+    print_results_infinite();
+    deallocate_memory();
+}
+
+// Esegue diverse run di batch mean con diversi valori di b
+void find_batch_b() {
+    int b = 64;
+    for (b; b < 2058; b = b * 2) {
+        ////////////////////
+        long seed;
+        GetSeed(&seed);
+        PlantSeeds(seed);
+        //////////////////        
+        for (int k = 0; k < 128; k++) {
+            infinite_horizon_batch(b, k);
+        }
+        char filename[100];
+        snprintf(filename, 100, "rt_batch_inf_%d.csv", b);
+        FILE *csv;
+        csv = open_csv(filename);
+        for (int j = 0; j < 128; j++) {
+            append_on_csv(csv, infinite_statistics[j]);
+        }
+        fclose(csv);
+    }
+}
+
+// Esegue un singolo batch ad orizzonte infinito
+void infinite_horizon_batch(int b, int k) {
+    int n = 0;
+    int q = 0;
+    double old;
+    while (n < b || q < b) {
+        print_line();
+        print_sorted_list();
+        compl *nextCompletion = &global_sorted_completions.sorted_list[0];
+        server *nextCompletionServer = nextCompletion->server;
+        if (n >= b) {
+            clock.next = nextCompletion->value;  // Ottengo il prossimo evento
+            if (clock.next == INFINITY) {
+                break;
+            }
+        } else {
+            clock.next = my_min(nextCompletion->value, clock.arrival);  // Ottengo il prossimo evento
+        }
+        DEBUG_PRINT("OTTENUTO PROSSIMO EVENTO DALLA SORTED LIST -> %f\n", clock.next);
+        if(clock.next==clock.arrival) {
+            DEBUG_PRINT("EVENTO : ARRIVO ESTERNO DAL SISTEMA\n");
+        } else {
+            DEBUG_PRINT("EVENTO : COMPLETAMENTO DI UN JOB IN %s\n", stringFromEnum(nextCompletionServer->block->type));
+        }
+        DEBUG_PRINT("NUMERO JOB PRESENTI NEL SISTEMA  : \n");
+        for (int i = 0; i < NUM_BLOCKS; i++) {
+            if (blocks[i].jobInBlock > 0) {
+                DEBUG_PRINT(" ->       JOB PRESENTI NEL BLOCCO %s : %d\n", stringFromEnum(blocks[i].type) , blocks[i].jobInBlock);
+                blocks[i].area.node += (clock.next - clock.current) * blocks[i].jobInBlock;
+                blocks[i].area.queue += (clock.next - clock.current) * blocks[i].jobInQueue;
+            }
+        }
+        clock.current = clock.next;  // Avanzamento del clock al valore del prossimo evento
+        if (clock.current == clock.arrival) {
+            process_arrival();
+            n++;
+
+        } else {
+            process_completion(*nextCompletion);
+            q++;
+        }
+    }
+    calculate_statistics_inf(blocks, (clock.current - clock.batch_current), infinite_statistics, k, infinite_delay);
+
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+        double p = 0;
+        int n = 0;
+        for (int j = 0; j < blocks[i].num_servers; j++) {
+            server *s = *blocks[i].serv+j;
+                p += (s->sum.service / clock.current);
+                n++;
+            }
+        if (blocks[i].type == VIDEO_UNIT) {
+            double loss_perc = (float)blocks[i].total_bypassed / (float)blocks[i].total_arrivals;
+            global_loss[k] = loss_perc;
+        }
+        global_means_p[k][i] = p / n;
+    }
+}
+
+// Calcola le statistiche specificate
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]) {
+    double visit_rt = 0;
+    double sys_delay = 0;
+    for (int i = 0; i < NUM_BLOCKS; i++) {
+        int arr = blocks[i].total_arrivals;
+        int r_arr = arr - blocks[i].total_bypassed;
+        int jq = blocks[i].jobInQueue;
+        double inter = currentClock / r_arr;
+
+        double wait = blocks[i].area.node / arr;
+        double delay = blocks[i].area.queue / r_arr;
+        double service = blocks[i].area.service / r_arr;
+
+        double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
+        double lambda_i = 1 / inter;
+        double mu = 1 / service;
+        double throughput = my_min(mu, lambda_i);
+        
+        double visit = throughput / external_arrival_rate;
+        visit_rt += visit * wait;
+        dl_arr[pos][i] += delay;
+    }
+    rt_arr[pos][0] = clock.current;
+    rt_arr[pos][1]= visit_rt;
+    rt_arr[pos][2]=ENERGY_SUM*3.6*visit_rt;
+}
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
     print_line();
@@ -632,6 +765,57 @@ double print_ploss() {
     //printf("P_LOSS: %f\n", loss_perc);
     return loss_perc;
 }
+
+// Stampa il costo e l'utilizzazione media ad orizzonte infinito
+void print_results_infinite() {
+
+    double l = 0;
+    for (int j = 0; j < NUM_BLOCKS; j++) {
+        printf("\nMean Utilization for block %s: ", stringFromEnum(j));
+        double p = 0;
+        for (int i = 0; i < BATCH_K; i++) {
+            p += global_means_p[i][j];
+            if (j == VIDEO_UNIT) {
+                l += global_loss[i];
+            }
+        }
+        printf("%f", p / BATCH_K);
+    }
+    printf("\nVIDEO UNIT LOSS PERC %f: ", l / BATCH_K);
+    printf("\n");
+}
+
+void write_rt_csv_infinite() {
+    char filename[100];
+    char filename_ploss[100];
+
+    snprintf(filename, 100, "rt_infinite_slot_.csv");
+    snprintf(filename_ploss, 100, "ploss_infinite_slot_.csv");
+    FILE *csv;
+    FILE *csv_ploss;
+    csv = open_csv(filename);
+    csv_ploss = open_csv(filename_ploss);
+
+    for (int j = 0; j < BATCH_K; j++) {
+        append_on_csv(csv, infinite_statistics[j]);
+        append_on_csv_loss(csv_ploss, global_loss);
+    }
+    fclose(csv);
+    fclose(csv_ploss);
+
+    for (int i = 0; i < NUM_BLOCKS - 1; i++) {
+        char filename_delays[100];
+        snprintf(filename_delays, 100, "infinite_dl_%d.csv",i);
+        FILE *csv_delays;
+        csv_delays = open_csv(filename_delays);
+
+        for (int j = 0; j < BATCH_K; j++) {
+            append_on_csv_delay(csv_delays, infinite_delay[j][i]);
+        }
+        fclose(csv_delays);
+    }
+}
+
 
 // Stampa a schermo le statistiche calcolate per ogni singolo blocco
 void print_statistics(double currentClock) {
@@ -716,13 +900,14 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double throughput = my_min(mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
-        double utilization = lambda_i/(mu);
+        double utilization = lambda_i/(blocks[i].num_servers*mu);
     }
     rt_arr[rep][0] = clock.current;
     rt_arr[rep][1]= visit_rt;
     rt_arr[rep][2]=ENERGY_SUM*3.6*visit_rt;
     DEBUG_PRINT("print statistiche finali\n");
 }
+
 
 // Calcola le statistiche specificate per ogni blocco 
 void calculate_statistics_for_each_block(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS], int rep) {
@@ -973,10 +1158,23 @@ void initialize() {
 }
 
 
-int main(void) {
+int main(int argc, char **argv) {
     init_csv=0;
-    finite_horizon_simulation(STOP, NUM_REPETITIONS);
-    save_on_csv_mean();
+    char *type=argv[1];
+    if(type="finite") {
+      printf("FINITE HORIZON SIMULATION\n");
+      finite_horizon_simulation(STOP, NUM_REPETITIONS);
+      save_on_csv_mean();
+    } 
+
+    if(type=="infinite") {
+       printf("INFINITE HORIZON SIMULATION\n");
+       infinite_horizon_simulation();
+    }
+    else {
+        printf("%s\n", type);
+    }
+    return 0;
 }
 
 void allocate_memory() {

@@ -43,7 +43,7 @@
 #define P_OFF_WLAN 0.11
 #define P_INTERNAL 0.4
 // Numero di ripetizioni e batch
-#define NUM_REPETITIONS 65
+#define NUM_REPETITIONS 128
 #define BATCH_B 1024
 #define BATCH_K 128
 
@@ -67,6 +67,17 @@ double block_statistics[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS];
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //data structure
 //Struttura che mantiene il clock
+
+
+double statistics[NUM_REPETITIONS][3];
+double infinite_statistics[BATCH_K][NUM_METRICS];
+double infinite_delay[BATCH_K][NUM_BLOCKS];
+double repetitions_costs[NUM_REPETITIONS];
+double global_means_p[BATCH_K][NUM_BLOCKS];
+double global_means_p_fin[NUM_REPETITIONS][3][NUM_BLOCKS];
+double global_loss[BATCH_K];
+
+
 struct clock_t {
     double current;  // Tempo attuale di simulazione
     double next;     // Tempo attuale del prossimo evento, sia arrivo che completamento
