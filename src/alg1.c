@@ -70,7 +70,7 @@ void deallocate_memory();
 void infinite_horizon_batch(int b, int k);
 void print_percentage(double part, double total, double oldPart);
 void print_results_infinite();
-void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]);
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS], double wt_arr[][NUM_BLOCKS]);
 /////////////////////////////////////////////////////////////////////////////////////
 double power_consumption[6]={0.0065,0.025,0.008,0.08,0.0017,0.1};
 
@@ -681,7 +681,7 @@ void infinite_horizon_batch(int b, int k) {
             q++;
         }
     }
-    calculate_statistics_inf(blocks, (clock.current - clock.batch_current), infinite_statistics, k, infinite_delay);
+    calculate_statistics_inf(blocks, (clock.current - clock.batch_current), infinite_statistics, k, infinite_delay, infinite_wait);
 
     for (int i = 0; i < NUM_BLOCKS; i++) {
         double p = 0;
@@ -705,7 +705,7 @@ void infinite_horizon_batch(int b, int k) {
 }
 
 // Calcola le statistiche specificate
-void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]) {
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS], double wt_arr[][NUM_BLOCKS]) {
     double visit_rt = 0;
     double sys_delay = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
@@ -726,9 +726,13 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
         double visit = throughput / external_arrival_rate;
         visit_rt += visit * wait;
         dl_arr[pos][i] += delay;
-    }
+        wt_arr[pos][i] += wait;
+     }
     rt_arr[pos][0]= visit_rt;
     rt_arr[pos][1] = currentClock;
+    long * seed = malloc(sizeof(seed)*10);
+    GetSeed(seed);
+    rt_arr[pos][2]= *seed;
 }
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
@@ -799,6 +803,8 @@ void write_rt_csv_infinite() {
     FILE *csv_ploss;
     csv = open_csv(filename);
     csv_ploss = open_csv(filename_ploss);
+    fprintf(csv, "response time, clock , seed\n");
+    fprintf(csv_ploss,"ploss");
 
     for (int j = 0; j < BATCH_K; j++) {
         append_on_csv(csv, infinite_statistics[j]);
@@ -807,15 +813,30 @@ void write_rt_csv_infinite() {
     fclose(csv);
     fclose(csv_ploss);
 
-    for (int i = 0; i < NUM_BLOCKS - 1; i++) {
-        char *filename_delays= "results/alg1/infinite/infinite_dl_d_.csv";
+    for (int i = 0; i < NUM_BLOCKS ; i++) {
+        char *filename_delays= malloc(sizeof(char)*150);
+        sprintf(filename_delays,"results/alg1/infinite/infinite_dl_%s.csv", stringFromEnum(i));
         FILE *csv_delays;
         csv_delays = open_csv_appendMode(filename_delays);
+        fprintf(csv_delays,"batch, block, delay\n");
 
         for (int j = 0; j < BATCH_K; j++) {
             append_on_csv_delay(csv_delays, infinite_delay[j][i], j , i);
         }
         fclose(csv_delays);
+    }
+
+     for (int i = 0; i < NUM_BLOCKS ; i++) {
+        char *filename_wait= malloc(sizeof(char)*150);
+        sprintf(filename_wait,"results/alg1/infinite/infinite_wait_%s.csv", stringFromEnum(i));
+        FILE *csv_wait;
+        csv_wait = open_csv_appendMode(filename_wait);
+        fprintf(csv_wait,"batch, block, wait\n");
+
+        for (int j = 0; j < BATCH_K; j++) {
+            append_on_csv_delay(csv_wait, infinite_wait[j][i], j , i);
+        }
+        fclose(csv_wait);
     }
 }
 
@@ -907,6 +928,9 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
     }
     rt_arr[rep][0]= visit_rt;
     rt_arr[rep][1]= currentClock;
+    long * seed = malloc(sizeof(long)*100);
+    GetSeed(seed);
+    rt_arr[rep][2]=*seed;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -1171,32 +1195,30 @@ void write_rt_csv_finite() {
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
-     fprintf(csv, "response time (ms), current time \n");
+        fprintf(csv, "response time (ms), current time, seed \n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, statistics[i]);
         }
         fclose(csv);
     }
-    char* filename2 = "results/alg1/finite/results_for_blocks.csv";
-    csv2 = open_csv(filename2);
-    if(csv2 != NULL){
-        DEBUG_PRINT("file exist!\n");
+  
+    for(int i=0;i<NUM_BLOCKS;i++) {
+      char* filename2 = malloc(sizeof(char)*100);
+      sprintf(filename2,"results/alg1/finite/finite_results_for_%s.csv",stringFromEnum(i));
+      csv2 = open_csv(filename2);
+      fprintf(csv2,"arr,r_arr,jq,inter,wait,delay,service,lambda_i,mu,throughut,visit,utilization\n");
         for (int j = 0; j < NUM_REPETITIONS; j++) {
-             fprintf(csv2,"sim. n : %d\n",j);
-             fprintf(csv2,"arr,r_arr,jq,inter,wait,delay,service,lambda_i,mu,throughut,visit,utilization\n");
-             for(int i=0;i<6;i++) {
-               for(int k=0;k<NUM_METRICS_BLOCKS;k++) {
-                  if(k==NUM_METRICS_BLOCKS-1) {
-                      fprintf(csv2," %f \n", block_statistics[j][i][k]);
-                  } else {
+           for(int k=0;k<NUM_METRICS_BLOCKS;k++) {
+                   if(k==NUM_METRICS_BLOCKS-1) {
+                       fprintf(csv2," %f \n", block_statistics[j][i][k]);
+                    } else {
                       fprintf(csv2," %f ,", block_statistics[j][i][k]);
-                  }
+                   }
                } 
              }
         }
         fclose(csv2);
     }
- }
 
 // Stampa a schermo una linea di separazione
 void print_line() {

@@ -25,7 +25,7 @@ double E(int c, double a)
 
 // Inserisce una nuova linea nel file csv specificato
 void *append_on_csv(FILE *fpt, double *ts) {
-    fprintf(fpt, "%2.6f , %2.6f\n", ts[0], ts[1]);
+    fprintf(fpt, "%2.6f , %2.6f, %2.6f\n", ts[0], ts[1],ts[2]);
     return fpt;
 }
 
@@ -65,7 +65,7 @@ void *append_on_csv_delay(FILE *fpt, double ts, int batch, int block) {
 }
 void *append_on_csv_batch(FILE *fpt, double *ts, int batch) {
      for(int i=0; i<6;i++) {
-          fprintf(fpt, "%d , %2.6f , %2.6f \n",  batch, ts[0], ts[1]);
+          fprintf(fpt, "%d , %2.6f ,%2.6f , %2.6f \n",  batch, ts[2] ,ts[0], ts[1]);
     }
     return fpt;
 }

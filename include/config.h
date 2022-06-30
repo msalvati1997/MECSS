@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
 #define NUM_BLOCKS 6
-#define NUM_METRICS 2
+#define NUM_METRICS 3
 #define START 0.0
 #define STOP  1.0 * 60.0 * 60.0 * 1000.00
 #define INFINITY (100.0 * STOP)
@@ -67,9 +67,9 @@ double block_statistics[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS];
 //data structure
 //Struttura che mantiene il clock
 
-double statistics[NUM_REPETITIONS][NUM_METRICS];
 double infinite_statistics[BATCH_K][NUM_METRICS];
 double infinite_delay[BATCH_K][NUM_BLOCKS];
+double infinite_wait[BATCH_K][NUM_BLOCKS];
 double repetitions_costs[NUM_REPETITIONS];
 double global_means_p[BATCH_K][NUM_BLOCKS];
 double global_means_p_fin[NUM_REPETITIONS][3][NUM_BLOCKS];

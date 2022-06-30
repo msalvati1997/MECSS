@@ -42,6 +42,7 @@ void enqueue(block *block_t, double arrival, int type);
 void printQueue(job *j);
 int dequeue(block *block);
 server *findFreeServer(int block_type);
+void *append_on_csv_batch(FILE *fpt, double *ts, int batch);
 void process_arrival();
 void process_completion(compl c);
 double my_min(double x, double y);
@@ -69,7 +70,7 @@ void deallocate_memory();
 void infinite_horizon_batch(int b, int k);
 void print_percentage(double part, double total, double oldPart);
 void print_results_infinite();
-void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]);
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS],double wt_arr[][NUM_BLOCKS]);
 /////////////////////////////////////////////////////////////////////////////////////
 double power_consumption[6]={0.0065,0.025,0.008,0.08,0.0017,0.1};
 
@@ -625,12 +626,12 @@ void find_batch_b() {
         for (int k = 0; k < BATCH_K; k++) {
             infinite_horizon_batch(b, k);
         }
-        char filename[50];
-        sprintf(filename,"/results/alg2/infinite/rt_batch_inf_%d.csv", b);
+        char *filename=malloc(sizeof(char)*100);
+        sprintf(filename,"results/alg2/infinite/rt_batch_inf_%d_.csv", b);
         FILE *csv;
         csv = open_csv(filename);
         for (int j = 0; j < BATCH_K; j++) {
-            append_on_csv(csv, infinite_statistics[j]);
+            append_on_csv_batch(csv, infinite_statistics[j], j);
         }
         fclose(csv);
         printf("Write statistics to %s\n",filename);
@@ -680,7 +681,7 @@ void infinite_horizon_batch(int b, int k) {
             q++;
         }
     }
-    calculate_statistics_inf(blocks, (clock.current - clock.batch_current), infinite_statistics, k, infinite_delay);
+    calculate_statistics_inf(blocks, (clock.current - clock.batch_current), infinite_statistics, k, infinite_delay, infinite_wait);
 
     for (int i = 0; i < NUM_BLOCKS; i++) {
         double p = 0;
@@ -704,7 +705,7 @@ void infinite_horizon_batch(int b, int k) {
 }
 
 // Calcola le statistiche specificate
-void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS]) {
+void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int pos, double dl_arr[][NUM_BLOCKS],double wt_arr[][NUM_BLOCKS]) {
     double visit_rt = 0;
     double sys_delay = 0;
     for (int i = 0; i < NUM_BLOCKS; i++) {
@@ -725,6 +726,7 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
         double visit = throughput / external_arrival_rate;
         visit_rt += visit * wait;
         dl_arr[pos][i] += delay;
+        wt_arr[pos][i] +=wait;
     }
     rt_arr[pos][0]= visit_rt;
     rt_arr[pos][1] = currentClock;
@@ -789,34 +791,6 @@ void print_results_infinite() {
     printf("\n");
 }
 
-void write_rt_csv_infinite() {
-    char * filename= "results/alg2/infinite/rt_infinite.csv";
-    char * filename_ploss ="results/alg2/infinite/ploss_infinite_slot.csv";
-
-
-    FILE *csv;
-    FILE *csv_ploss;
-    csv = open_csv(filename);
-    csv_ploss = open_csv(filename_ploss);
-
-    for (int j = 0; j < BATCH_K; j++) {
-        append_on_csv(csv, infinite_statistics[j]);
-        append_on_csv_loss(csv_ploss, global_loss);
-    }
-    fclose(csv);
-    fclose(csv_ploss);
-
-    for (int i = 0; i < NUM_BLOCKS - 1; i++) {
-        char *filename_delays= "results/alg2/infinite/infinite_dl_d_.csv";
-        FILE *csv_delays;
-        csv_delays = open_csv_appendMode(filename_delays);
-
-        for (int j = 0; j < BATCH_K; j++) {
-            append_on_csv_delay(csv_delays, infinite_delay[j][i], j , i);
-        }
-        fclose(csv_delays);
-    }
-}
 
 
 // Stampa a schermo le statistiche calcolate per ogni singolo blocco
@@ -880,6 +854,7 @@ void print_statistics(double currentClock) {
         }
     }
 }
+
 
 // Calcola le statistiche specificate
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep) {
@@ -1002,7 +977,7 @@ void initialize() {
     }
 
    DEBUG_PRINT("blocks initialized  \n");
-   blocks[0].num_servers=2; //control unit //MIGLIORATIVO -> COLLO DI BOTTIGLIA 
+   blocks[0].num_servers=2; //control unit
    blocks[1].num_servers=2; //video 
    blocks[2].num_servers=2; //wlan 
    blocks[3].num_servers=1; //enode 
@@ -1112,8 +1087,8 @@ int main(int argc, char **argv) {
     } 
     if(strcmp(type, "INFINITE")==0) {
        printf("INFINITE HORIZON SIMULATION\n");
-       find_batch_b();
-       //infinite_horizon_simulation();
+      // find_batch_b();
+       infinite_horizon_simulation();
     }
     else {
         printf("TYPE OF COMMAND NOT VALID -> %s\n", type);
@@ -1123,8 +1098,7 @@ int main(int argc, char **argv) {
 
 void allocate_memory() {
    control_unit=calloc(2,sizeof(server*));
-   (*control_unit)=calloc(1,sizeof(server));
-   (*control_unit+1)=calloc(1,sizeof(server));
+   (*control_unit)=calloc(2,sizeof(server));
    video_unit=calloc(2,sizeof(server*));
    (*video_unit)=calloc(2,sizeof(server));
    wlan_unit=calloc(2,sizeof(server*));
@@ -1136,6 +1110,7 @@ void allocate_memory() {
    cloud_unit=calloc(1,sizeof(server*));
    (*cloud_unit)=calloc(1,sizeof(server));
    (*control_unit)->block=malloc(sizeof(block));
+   (*control_unit+1)->block=malloc(sizeof(block));
    (*video_unit)->block=malloc(sizeof(block));
    (*video_unit+1)->block=malloc(sizeof(block));
    (*wlan_unit)->block=malloc(sizeof(block));
@@ -1163,41 +1138,39 @@ void deallocate_memory() {
    free(edge_unit);
    free(cloud_unit);   
 }
+
 // Scrive i tempi di risposta a tempo finito su un file csv
 void write_rt_csv_finite() {
     FILE *csv;
     FILE *csv2;
-    char* filename = "results/alg2/finite/infite_results.csv";
+    char* filename = "results/alg2/finite/finite_results.csv";
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
-     fprintf(csv, "response time (ms), current time \n");
+        fprintf(csv, "response time (ms), current time \n");
         for (int i = 0; i < NUM_REPETITIONS; i++) {
             append_on_csv(csv, statistics[i]);
         }
         fclose(csv);
     }
-    char* filename2 = "results/alg2/finite/results_for_blocks.csv";
-    csv2 = open_csv(filename2);
-    if(csv2 != NULL){
-        DEBUG_PRINT("file exist!\n");
+  
+    for(int i=0;i<NUM_BLOCKS;i++) {
+      char* filename2 = malloc(sizeof(char)*100);
+      sprintf(filename2,"results/alg2/finite/finite_results_for_%s.csv",stringFromEnum(i));
+      csv2 = open_csv(filename2);
+      fprintf(csv2,"arr,r_arr,jq,inter,wait,delay,service,lambda_i,mu,throughut,visit,utilization\n");
         for (int j = 0; j < NUM_REPETITIONS; j++) {
-             fprintf(csv2,"sim. n : %d\n",j);
-             fprintf(csv2,"arr,r_arr,jq,inter,wait,delay,service,lambda_i,mu,throughut,visit,utilization\n");
-             for(int i=0;i<6;i++) {
-               for(int k=0;k<NUM_METRICS_BLOCKS;k++) {
-                  if(k==NUM_METRICS_BLOCKS-1) {
-                      fprintf(csv2," %f \n", block_statistics[j][i][k]);
-                  } else {
+           for(int k=0;k<NUM_METRICS_BLOCKS;k++) {
+                   if(k==NUM_METRICS_BLOCKS-1) {
+                       fprintf(csv2," %f \n", block_statistics[j][i][k]);
+                    } else {
                       fprintf(csv2," %f ,", block_statistics[j][i][k]);
-                  }
+                   }
                } 
              }
         }
         fclose(csv2);
     }
- }
-
 // Stampa a schermo una linea di separazione
 void print_line() {
     DEBUG_PRINT("\n————————————————————————————————————————————————————————————————————————————————————————\n");
