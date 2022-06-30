@@ -597,7 +597,7 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 // Esegue una simulazione ad orizzonte infinito tramite il metodo delle batch means
 void infinite_horizon_simulation() {
     printf("\n\n==== Infinite Horizon Simulation | #batch %d====", BATCH_K);
-    
+    PlantSeeds(231232132);
     int b = BATCH_B;
     allocate_memory();
     initialize();
@@ -615,28 +615,23 @@ void infinite_horizon_simulation() {
 void find_batch_b() {
     printf("find batch b\n");
     allocate_memory();
-    int b = 64;
-    for (b; b < 2058; b = b * 2) {
-        clear_environment();
-        initialize();
-        ////////////////////
-        long seed;
-        GetSeed(&seed);
-        PlantSeeds(seed);
-        //////////////////        
-        for (int k = 0; k < 128; k++) {
+    PlantSeeds(231232132);
+    int b = 16;
+    initialize();       
+    for (b; b <= BATCH_B; b = b * 3) {
+        reset_statistics();
+        for (int k = 0; k < BATCH_K; k++) {
             infinite_horizon_batch(b, k);
         }
-
         char filename[50];
         sprintf(filename,"rt_batch_inf_%d.csv", b);
         FILE *csv;
         csv = open_csv(filename);
-        for (int j = 0; j < 128; j++) {
+        for (int j = 0; j < BATCH_K; j++) {
             append_on_csv(csv, infinite_statistics[j]);
         }
         fclose(csv);
-        printf("Write statistics to csv\n");
+        printf("Write statistics to %s\n",filename);
     }
     //deallocate_memory();
 }
@@ -699,6 +694,11 @@ void infinite_horizon_batch(int b, int k) {
         }
         global_means_p[k][i] = p / n;
     }
+   ////////////////////
+   long seed;
+   GetSeed(&seed);
+   PlantSeeds(seed);
+    ////////////////// 
 }
 
 // Calcola le statistiche specificate

@@ -44,8 +44,8 @@
 #define P_INTERNAL 0.4
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
-#define BATCH_B 1024
-#define BATCH_K 128
+#define BATCH_B 4096
+#define BATCH_K 512*2
 
 #define NUM_METRICS_BLOCKS 12
 
