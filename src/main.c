@@ -724,9 +724,9 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
         visit_rt += visit * wait;
         dl_arr[pos][i] += delay;
     }
-    rt_arr[pos][0] = clock.current;
-    rt_arr[pos][1]= visit_rt;
-    rt_arr[pos][2]=ENERGY_SUM*3.6*visit_rt;
+    //rt_arr[pos][0] = clock.current;
+    rt_arr[pos][0]= visit_rt;
+   // rt_arr[pos][2]=ENERGY_SUM*3.6*visit_rt;
 }
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
@@ -908,9 +908,9 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         visit_rt += wait * visit;
         double utilization = lambda_i/(blocks[i].num_servers*mu);
     }
-    rt_arr[rep][0] = clock.current;
-    rt_arr[rep][1]= visit_rt;
-    rt_arr[rep][2]=ENERGY_SUM*3.6*visit_rt;
+    //rt_arr[rep][0] = clock.current;
+    rt_arr[rep][0]= visit_rt;
+   // rt_arr[rep][2]=ENERGY_SUM*3.6*visit_rt;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
