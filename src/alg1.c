@@ -42,6 +42,7 @@ void enqueue(block *block_t, double arrival, int type);
 void printQueue(job *j);
 int dequeue(block *block);
 server *findFreeServer(int block_type);
+void *append_on_csv_batch(FILE *fpt, double *ts, int batch);
 void process_arrival();
 void process_completion(compl c);
 double my_min(double x, double y);
@@ -64,7 +65,7 @@ void *append_on_csv_loss(FILE *fpt, double *ts);
 void *append_on_csv(FILE *fpt, double *ts);
 void *append_on_csv_v2(FILE *fpt, double ts, double p);
 void *append_on_csv3(FILE *fpt, double **ts, int p);
-void append_on_csv_delay(FILE *fpt, double ts);
+void *append_on_csv_delay(FILE *fpt, double ts, int batch, int block);
 void deallocate_memory();
 void infinite_horizon_batch(int b, int k);
 void print_percentage(double part, double total, double oldPart);
@@ -625,12 +626,12 @@ void find_batch_b() {
         for (int k = 0; k < BATCH_K; k++) {
             infinite_horizon_batch(b, k);
         }
-        char filename[50];
-        sprintf(filename,"rt_batch_inf_%d.csv", b);
+        char *filename=malloc(sizeof(char)*100);
+        sprintf(filename,"results/alg1/infinite/rt_batch_inf_%d_.csv", b);
         FILE *csv;
         csv = open_csv(filename);
         for (int j = 0; j < BATCH_K; j++) {
-            append_on_csv(csv, infinite_statistics[j]);
+            append_on_csv_batch(csv, infinite_statistics[j], j);
         }
         fclose(csv);
         printf("Write statistics to %s\n",filename);
@@ -733,7 +734,7 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
 void calculate_statistics_clock(block blocks[], double currentClock) {
     print_line();
     DEBUG_PRINT("calculate staticts clock\n");
-    char* filename = "continuos_finite.csv";
+    char* filename = "results/alg1/finite/continuos_finite.csv";
     FILE *csv;
     csv = open_csv_appendMode(filename);
     if(init_csv==0) {
@@ -790,8 +791,8 @@ void print_results_infinite() {
 }
 
 void write_rt_csv_infinite() {
-    char * filename= "rt_infinite.csv";
-    char * filename_ploss ="ploss_infinite_slot.csv";
+    char * filename= "results/alg1/infinite/rt_infinite.csv";
+    char * filename_ploss ="results/alg1/infinite/ploss_infinite_slot.csv";
 
 
     FILE *csv;
@@ -807,17 +808,12 @@ void write_rt_csv_infinite() {
     fclose(csv_ploss);
 
     for (int i = 0; i < NUM_BLOCKS - 1; i++) {
-        char *filename_delays= malloc(sizeof(char)*100);
-        strcat(filename_delays, "infinite_dl_d_");
-        char * buffer = malloc(sizeof(char)*20);
-        sprintf(buffer,"%d",i) ;
-        strcat(filename_delays, buffer);
-        strcat(filename_delays, ".csv");
+        char *filename_delays= "results/alg1/infinite/infinite_dl_d_.csv";
         FILE *csv_delays;
-        csv_delays = open_csv(filename_delays);
+        csv_delays = open_csv_appendMode(filename_delays);
 
         for (int j = 0; j < BATCH_K; j++) {
-            append_on_csv_delay(csv_delays, infinite_delay[j][i]);
+            append_on_csv_delay(csv_delays, infinite_delay[j][i], j , i);
         }
         fclose(csv_delays);
     }
@@ -1007,28 +1003,11 @@ void initialize() {
     }
 
    DEBUG_PRINT("blocks initialized  \n");
-  // control_unit=calloc(1,sizeof(server*));
-  // (*control_unit)=calloc(1,sizeof(server));
    blocks[0].num_servers=1; //control unit
-   
-   //video_unit=calloc(2,sizeof(server*));
-   //(*video_unit)=calloc(2,sizeof(server));
    blocks[1].num_servers=2; //video 
-
-   //wlan_unit=calloc(2,sizeof(server*));
-  // (*wlan_unit)=calloc(2,sizeof(server));
    blocks[2].num_servers=2; //wlan 
- 
- //  enode_unit=calloc(1,sizeof(server*));
- //  (*enode_unit)=calloc(1,sizeof(server));
    blocks[3].num_servers=1; //enode 
-
-  // edge_unit=calloc(4,sizeof(server*));
-  // (*edge_unit)=calloc(4,sizeof(server));
    blocks[4].num_servers=4; //edge
-
- //  cloud_unit=calloc(1,sizeof(server*));
-  // (*cloud_unit)=calloc(1,sizeof(server));
    blocks[5].num_servers=1; //cloud
 
    DEBUG_PRINT("unit starting initialized \n");
@@ -1051,7 +1030,6 @@ void initialize() {
    (*control_unit)->loss=NOT_LOSS_SYSTEM;
    (*control_unit)->stream=streamID++;
    streamID+=streamID;
-  // (*control_unit)->block=malloc(sizeof(block));
    (*control_unit)->block=&blocks[0];
    
 
@@ -1061,7 +1039,6 @@ void initialize() {
        (*video_unit+i)->online=ONLINE;
        (*video_unit+i)->loss=LOSS_SYSTEM;
        (*video_unit+i)->stream=streamID++;
-      // (*video_unit+i)->block=malloc(sizeof(block));
        (*video_unit+i)->block=&blocks[1];  
        streamID+=streamID;
    }
@@ -1073,7 +1050,6 @@ void initialize() {
          (*wlan_unit+i)->online=ONLINE;
          (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
          (*wlan_unit+i)->stream=streamID++;
-         //(*wlan_unit+i)->block=malloc(sizeof(block));
          (*wlan_unit+i)->block=&blocks[2];
          streamID+=streamID;
    }
@@ -1082,7 +1058,6 @@ void initialize() {
    (*enode_unit)->online=ONLINE;
    (*enode_unit)->loss=NOT_LOSS_SYSTEM;
    (*enode_unit)->stream=streamID++;
-  // (*enode_unit)->block=malloc(sizeof(block));
    (*enode_unit)->block=&blocks[3];
    streamID+=streamID;
    
@@ -1091,7 +1066,6 @@ void initialize() {
           (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
-         // (*edge_unit+i)->block=malloc(sizeof(block));
           (*edge_unit+i)->block=&blocks[4];
           streamID+=streamID;
    }
@@ -1100,20 +1074,13 @@ void initialize() {
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
- //  (*cloud_unit)->block=malloc(sizeof(block));
    (*cloud_unit)->block=&blocks[5];
 
-  // blocks[0].serv = malloc(sizeof(server*));
    blocks[0].serv=control_unit;
-  // blocks[1].serv = malloc(sizeof(server*)*2);
    blocks[1].serv=video_unit;
-  // blocks[2].serv = malloc(sizeof(server*)*2);
    blocks[2].serv=wlan_unit;
-  // blocks[3].serv = malloc(sizeof(server*));
    blocks[3].serv=enode_unit;
-  // blocks[4].serv = malloc(sizeof(server*)*4);
    blocks[4].serv =edge_unit;
-  // blocks[5].serv = malloc(sizeof(server*));
    blocks[5].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
 
@@ -1146,8 +1113,8 @@ int main(int argc, char **argv) {
     } 
     if(strcmp(type, "INFINITE")==0) {
        printf("INFINITE HORIZON SIMULATION\n");
-       find_batch_b();
-       //infinite_horizon_simulation();
+      // find_batch_b();
+       infinite_horizon_simulation();
     }
     else {
         printf("TYPE OF COMMAND NOT VALID -> %s\n", type);
@@ -1200,7 +1167,7 @@ void deallocate_memory() {
 void write_rt_csv_finite() {
     FILE *csv;
     FILE *csv2;
-    char* filename = "results.csv";
+    char* filename = "results/alg1/finite/finite_results.csv";
     csv = open_csv(filename);
     if(csv != NULL){
         DEBUG_PRINT("file exist!\n");
@@ -1210,7 +1177,7 @@ void write_rt_csv_finite() {
         }
         fclose(csv);
     }
-    char* filename2 = "results_for_blocks.csv";
+    char* filename2 = "results/alg1/finite/results_for_blocks.csv";
     csv2 = open_csv(filename2);
     if(csv2 != NULL){
         DEBUG_PRINT("file exist!\n");
