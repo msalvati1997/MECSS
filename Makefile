@@ -25,6 +25,7 @@ clean:
 %:
 	@echo Available targets:
 	@echo "  help"
+	@echo "  clean"
 	@echo "  release_finite"
 	@echo "  release_infinite"
 	@echo "  debug_finite"
