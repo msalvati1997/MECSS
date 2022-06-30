@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdio.h>          // Needed for DEBUG_PRINT()
-#include <stdlib.h>  
+
 
 #ifdef DEBUG
 #define DEBUG_PRINT(...) do{ \
@@ -807,7 +807,7 @@ void write_rt_csv_infinite() {
     for (int i = 0; i < NUM_BLOCKS - 1; i++) {
         char *filename_delays= malloc(sizeof(char)*100);
         strcat(filename_delays, "infinite_dl_d_");
-        strcat(filename_delays, itoa(i));
+        strcat(filename_delays, atoi(i));
         strcat(filename_delays, ".csv");
         FILE *csv_delays;
         csv_delays = open_csv(filename_delays);
