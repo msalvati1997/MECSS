@@ -40,6 +40,7 @@ void allocate_memory() ;
 double getService(int type_service, int stream);
 void enqueue(block *block_t, double arrival, int type);
 void printQueue(job *j);
+void *append_on_csv_batch_find(FILE *fpt, double *ts, int batch);
 int dequeue(block *block);
 server *findFreeServer(int block_type);
 void *append_on_csv_batch(FILE *fpt, double *ts, int batch);
@@ -619,7 +620,7 @@ void find_batch_b() {
     printf("find batch b\n");
     allocate_memory();
     PlantSeeds(231232132);
-    int b = 16;
+    int b = 1;
     initialize();       
     for (b; b <= BATCH_B; b = b + 1) {
         reset_statistics();
@@ -631,7 +632,7 @@ void find_batch_b() {
         FILE *csv;
         csv = open_csv(filename);
         for (int j = 0; j < BATCH_K; j++) {
-            append_on_csv_batch(csv, infinite_statistics[j], j);
+            append_on_csv_batch_find(csv, infinite_statistics[j], j);
         }
         fclose(csv);
         printf("Write statistics to %s\n",filename);
