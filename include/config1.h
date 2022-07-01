@@ -25,6 +25,7 @@
 #define EDGE_UNIT_PC 0.00117
 #define CLOUD_UNIT_PC 0.1
 
+
 //delay
 #define DELAY_FROM_EDGE_TO_CLOUD 1.0
 #define DELAY_TO_EDGE 0.1
@@ -43,8 +44,8 @@
 #define P_INTERNAL 0.4
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
-#define BATCH_B 128  //382 //223 //490 //503
-#define BATCH_K 64000 
+#define BATCH_B 120000  
+#define BATCH_K 128 
 
 #define NUM_METRICS_BLOCKS 13
 
@@ -103,6 +104,7 @@ enum block_types {
     ENODE_UNIT,
     EDGE_UNIT,
     CLOUD_UNIT,
+
 };
 
 struct area_t {

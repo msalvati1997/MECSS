@@ -1,4 +1,3 @@
-#include "../include/config.h"
 #include "../include/rngs.h"
 #include "../include/rvgs.h"
 #include "../include/rvms.h"
@@ -7,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdio.h>          // Needed for DEBUG_PRINT()
-
+#include "../include/config2.h"
 
 #ifdef DEBUG
 #define DEBUG_PRINT(...) do{ \
@@ -76,7 +75,7 @@ double power_consumption[6]={0.0065,0.025,0.008,0.08,0.0017,0.1};
 
 char* stringFromEnum(int f) {
 
-    char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "WLAN_UNIT", "ENODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
+    char *strings[6]= {"CONTROL_UNIT", "VIDEO_UNIT", "GNODE_UNIT", "EDGE_UNIT","CLOUD_UNIT"};
     return strings[f];
 }
 
@@ -128,9 +127,7 @@ int getDestination(enum block_types from, int type) {
               int ret = routing_to_cloud();
               DEBUG_PRINT("ROUTING FROM VIDEO UNIT TO %s\n", stringFromEnum(ret));
               return ret;
-        case WLAN_UNIT:
-            return EDGE_UNIT;
-        case ENODE_UNIT:
+        case GNODE_UNIT:
             return EDGE_UNIT;
         case EDGE_UNIT:
             return CLOUD_UNIT;
@@ -190,12 +187,10 @@ double getService(int type_service, int stream) {
         case 1:
             return Exponential(VIDEO_SERVICE_TIME);
         case 2:
-            return Exponential(WLAN_FRAME_UPLOAD_TIME);
+            return Exponential(GNODE_FRAME_UPLOAD_TIME);
         case 3:
-            return Exponential(ENODE_FRAME_UPLOAD_TIME);
-        case 4:
             return Exponential(EDGE_PROCESSING_TIME);
-        case 5:
+        case 4:
             return Exponential(CLOUD_PROCESSING_TIME);; 
         default:
             DEBUG_PRINT("Case not defined\n");
@@ -293,7 +288,7 @@ void process_arrival() {
     blocks[0].jobInBlock++;
     blocks[0].total_arrivals++;
 
-    server *s = findFreeServer(0);
+    server *s = findFreeServer(CONTROL_UNIT);
     // C'è un servente libero, quindi genero il completamento
     int type_of = EXTERNAL;
     double random = Uniform(0,1);
@@ -306,7 +301,7 @@ void process_arrival() {
         double serviceTime = getService(CONTROL_UNIT, s->stream);
         DEBUG_PRINT("TEMPO DI PROCESSAMENTO IN %s GENERATO: %f\n", stringFromEnum(0), serviceTime);
         compl c = {s, INFINITY};
-        s->block=&blocks[0];
+        s->block=&blocks[CONTROL_UNIT];
         c.server=s;
         c.value = clock.current + serviceTime;
         s->status = BUSY;  // Setto stato busy
@@ -314,10 +309,10 @@ void process_arrival() {
         s->block->area.service += serviceTime;
         s->sum.served++;
         insertSorted(&global_sorted_completions, c);
-        enqueue(&blocks[0], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
+        enqueue(&blocks[CONTROL_UNIT], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
     } else {
-        enqueue(&blocks[0], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
-        blocks[0].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
+        enqueue(&blocks[CONTROL_UNIT], clock.arrival,type_of);  // lo appendo nella linked list di job del blocco 
+        blocks[CONTROL_UNIT].jobInQueue++;              // Se non c'è un servente libero aumenta il numero di job in coda
     }
     clock.arrival = getArrival(clock.current);  // Genera prossimo arrivo
 }
@@ -456,36 +451,10 @@ void process_completion(compl c) {
 }
 
 
-//Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
-//logica del dispatcher
+
 int routing_to_cloud() {
-  // intermittent_wlan();
-double random = Uniform(0, 1);
-       if(random<=P_WLAN_CHOICE) {
-          return WLAN_UNIT;
-       } else {
-          return ENODE_UNIT;
-       }
+    return GNODE_UNIT;
    }
-
-
-//Thread che disattiva la WLAN essendo un server intermittente 
-void intermittent_wlan() {
-    DEBUG_PRINT("INTERMITTENT WLAN\n");
-    double random = Uniform(0,1);
-    if(random<=P_OFF_WLAN) {
-        DEBUG_PRINT("WLAN OFF\n");
-        (*wlan_unit)->need_resched=true;
-        (*wlan_unit+1)->need_resched=true;
-    } else {
-        DEBUG_PRINT("WLAN ON\n");
-        (*wlan_unit)->need_resched=false;
-        (*wlan_unit+1)->need_resched=false;
-        (*wlan_unit)->online=ONLINE;
-        (*wlan_unit+1)->online=ONLINE;
-    }
-}
-
 
 
 
@@ -730,6 +699,9 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
     }
     rt_arr[pos][0]= visit_rt;
     rt_arr[pos][1] = currentClock;
+    long * seed = malloc(sizeof(long)*100);
+    GetSeed(seed);
+    rt_arr[pos][2] = *seed;
 }
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
 void calculate_statistics_clock(block blocks[], double currentClock) {
@@ -881,6 +853,9 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
     }
     rt_arr[rep][0]= visit_rt;
     rt_arr[rep][1]= currentClock;
+    long * seed = malloc(sizeof(long)*100);
+    GetSeed(seed);
+    rt_arr[rep][2]=*seed;
     DEBUG_PRINT("print statistiche finali\n");
 }
 
@@ -979,19 +954,18 @@ void initialize() {
    DEBUG_PRINT("blocks initialized  \n");
    blocks[0].num_servers=2; //control unit
    blocks[1].num_servers=2; //video 
-   blocks[2].num_servers=2; //wlan 
-   blocks[3].num_servers=1; //enode 
-   blocks[4].num_servers=4; //edge
-   blocks[5].num_servers=1; //cloud
+   blocks[2].num_servers=2; //gnode 
+   blocks[3].num_servers=4; //edge
+   blocks[4].num_servers=1; //cloud
 
    DEBUG_PRINT("unit starting initialized \n");
 
    (*control_unit)->id=0;
-   (*video_unit)->id=1;
-   (*video_unit+1)->id=2;
-   (*wlan_unit)->id=3;
-   (*wlan_unit+1)->id=4;
-   (*enode_unit)->id=5;
+   (*control_unit+1)->id=1;
+   (*video_unit)->id=2;
+   (*video_unit+1)->id=3;
+   (*gnode_unit)->id=4;
+   (*gnode_unit+1)->id=5;
    (*edge_unit)->id=6;
    (*edge_unit+1)->id=7;
    (*edge_unit+2)->id=8;
@@ -999,15 +973,15 @@ void initialize() {
    (*cloud_unit)->id=10;
 
 
-   (*control_unit)->status=IDLE;
-   (*control_unit)->online=ONLINE;
-   (*control_unit)->loss=NOT_LOSS_SYSTEM;
-   (*control_unit)->stream=streamID++;
-   streamID+=streamID;
-   (*control_unit)->block=&blocks[0];
-   
+   for(int i=0;i<blocks[0].num_servers;i++) {
+       (*control_unit+i)->status=IDLE;
+       (*control_unit+i)->online=ONLINE;
+       (*control_unit+i)->loss=NOT_LOSS_SYSTEM;
+       (*control_unit+i)->stream=streamID++;
+       (*control_unit+i)->block=&blocks[1];  
+        streamID+=streamID;
+   }
 
-   DEBUG_PRINT("control_unit initialized\n");
    for(int i=0;i<blocks[1].num_servers;i++) {
        (*video_unit+i)->status=IDLE;
        (*video_unit+i)->online=ONLINE;
@@ -1018,29 +992,21 @@ void initialize() {
    }
    blocks[1].type=1;
 
-
    for(int i=0;i<blocks[2].num_servers;i++) {
-         (*wlan_unit+i)->status=IDLE;
-         (*wlan_unit+i)->online=ONLINE;
-         (*wlan_unit+i)->loss=NOT_LOSS_SYSTEM;
-         (*wlan_unit+i)->stream=streamID++;
-         (*wlan_unit+i)->block=&blocks[2];
-         streamID+=streamID;
+          (*gnode_unit+i)->status=IDLE;
+          (*gnode_unit+i)->online=ONLINE;
+          (*gnode_unit+i)->loss=NOT_LOSS_SYSTEM;
+          (*gnode_unit+i)->stream=streamID++;
+          (*gnode_unit+i)->block=&blocks[2];
+          streamID+=streamID;
    }
-
-   (*enode_unit)->status=IDLE;
-   (*enode_unit)->online=ONLINE;
-   (*enode_unit)->loss=NOT_LOSS_SYSTEM;
-   (*enode_unit)->stream=streamID++;
-   (*enode_unit)->block=&blocks[3];
-   streamID+=streamID;
    
-   for(int i=0;i<blocks[4].num_servers;i++) {
+   for(int i=0;i<blocks[3].num_servers;i++) {
           (*edge_unit+i)->status=IDLE;
           (*edge_unit+i)->online=ONLINE;
           (*edge_unit+i)->loss=NOT_LOSS_SYSTEM;
           (*edge_unit+i)->stream=streamID++;
-          (*edge_unit+i)->block=&blocks[4];
+          (*edge_unit+i)->block=&blocks[3];
           streamID+=streamID;
    }
 
@@ -1048,23 +1014,22 @@ void initialize() {
    (*cloud_unit)->online=ONLINE;
    (*cloud_unit)->loss=NOT_LOSS_SYSTEM;
    (*cloud_unit)->stream=streamID++;
-   (*cloud_unit)->block=&blocks[5];
+   (*cloud_unit)->block=&blocks[4];
 
    blocks[0].serv=control_unit;
    blocks[1].serv=video_unit;
-   blocks[2].serv=wlan_unit;
-   blocks[3].serv=enode_unit;
-   blocks[4].serv =edge_unit;
-   blocks[5].serv= cloud_unit;
+   blocks[2].serv=gnode_unit;
+   blocks[3].serv =edge_unit;
+   blocks[4].serv= cloud_unit;
    clock.arrival = getArrival(clock.current);
 
 
    insertSorted(&global_sorted_completions, (compl) {(*control_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*control_unit+1), INFINITY});
    insertSorted(&global_sorted_completions, (compl) {(*video_unit), INFINITY});
    insertSorted(&global_sorted_completions, (compl) {(*video_unit+1), INFINITY});
-   insertSorted(&global_sorted_completions, (compl) {(*wlan_unit), INFINITY});
-   insertSorted(&global_sorted_completions, (compl) {(*wlan_unit+1), INFINITY});
-   insertSorted(&global_sorted_completions, (compl) {(*enode_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*gnode_unit), INFINITY});
+   insertSorted(&global_sorted_completions, (compl) {(*gnode_unit+1), INFINITY});
    insertSorted(&global_sorted_completions, (compl) {(*edge_unit), INFINITY});
    insertSorted(&global_sorted_completions, (compl) {(*edge_unit+1), INFINITY});
    insertSorted(&global_sorted_completions, (compl) {(*edge_unit+2), INFINITY});
@@ -1101,10 +1066,8 @@ void allocate_memory() {
    (*control_unit)=calloc(2,sizeof(server));
    video_unit=calloc(2,sizeof(server*));
    (*video_unit)=calloc(2,sizeof(server));
-   wlan_unit=calloc(2,sizeof(server*));
-   (*wlan_unit)=calloc(2,sizeof(server));
-   enode_unit=calloc(1,sizeof(server*));
-   (*enode_unit)=calloc(1,sizeof(server));
+   gnode_unit=calloc(2,sizeof(server*));
+   (*gnode_unit)=calloc(2,sizeof(server));
    edge_unit=calloc(4,sizeof(server*));
    (*edge_unit)=calloc(4,sizeof(server));
    cloud_unit=calloc(1,sizeof(server*));
@@ -1113,28 +1076,25 @@ void allocate_memory() {
    (*control_unit+1)->block=malloc(sizeof(block));
    (*video_unit)->block=malloc(sizeof(block));
    (*video_unit+1)->block=malloc(sizeof(block));
-   (*wlan_unit)->block=malloc(sizeof(block));
-   (*wlan_unit+1)->block=malloc(sizeof(block));
-   (*enode_unit)->block=malloc(sizeof(block));
+   (*gnode_unit)->block=malloc(sizeof(block));
+   (*gnode_unit+1)->block=malloc(sizeof(block));
    (*edge_unit)->block=malloc(sizeof(block));
    (*edge_unit+1)->block=malloc(sizeof(block));
    (*edge_unit+2)->block=malloc(sizeof(block));
    (*edge_unit+3)->block=malloc(sizeof(block));
    (*cloud_unit)->block=malloc(sizeof(block));
-   blocks[0].serv = malloc(sizeof(server*));
+   blocks[0].serv = malloc(sizeof(server*)*2);
    blocks[1].serv = malloc(sizeof(server*)*2);
    blocks[2].serv = malloc(sizeof(server*)*2);
-   blocks[3].serv = malloc(sizeof(server*));
-   blocks[4].serv = malloc(sizeof(server*)*4);
-   blocks[5].serv = malloc(sizeof(server*));
+   blocks[3].serv = malloc(sizeof(server*)*4);
+   blocks[4].serv = malloc(sizeof(server*));
 }
 
 
 void deallocate_memory() {
    free(control_unit);
    free(video_unit);
-   free(wlan_unit);
-   free(enode_unit);
+   free(gnode_unit);
    free(edge_unit);
    free(cloud_unit);   
 }
@@ -1179,3 +1139,49 @@ void print_line() {
 void print_line_release() {
     printf("\n————————————————————————————————————————————————————————————————————————————————————————\n");
 }
+void write_rt_csv_infinite() {
+    char * filename= "results/alg2/infinite/rt_infinite.csv";
+    char * filename_ploss ="results/alg2/infinite/ploss_infinite_slot.csv";
+
+
+    FILE *csv;
+    FILE *csv_ploss;
+    csv = open_csv(filename);
+    csv_ploss = open_csv(filename_ploss);
+    fprintf(csv, "response time, clock , seed\n");
+    fprintf(csv_ploss,"ploss");
+
+    for (int j = 0; j < BATCH_K; j++) {
+        append_on_csv(csv, infinite_statistics[j]);
+        append_on_csv_loss(csv_ploss, global_loss);
+    }
+    fclose(csv);
+    fclose(csv_ploss);
+
+    for (int i = 0; i < NUM_BLOCKS ; i++) {
+        char *filename_delays= malloc(sizeof(char)*150);
+        sprintf(filename_delays,"results/alg2/infinite/infinite_dl_%s.csv", stringFromEnum(i));
+        FILE *csv_delays;
+        csv_delays = open_csv_appendMode(filename_delays);
+        fprintf(csv_delays,"batch, block, delay\n");
+
+        for (int j = 0; j < BATCH_K; j++) {
+            append_on_csv_delay(csv_delays, infinite_delay[j][i], j , i);
+        }
+        fclose(csv_delays);
+    }
+
+     for (int i = 0; i < NUM_BLOCKS ; i++) {
+        char *filename_wait= malloc(sizeof(char)*150);
+        sprintf(filename_wait,"results/alg2/infinite/infinite_wait_%s.csv", stringFromEnum(i));
+        FILE *csv_wait;
+        csv_wait = open_csv_appendMode(filename_wait);
+        fprintf(csv_wait,"batch, block, wait\n");
+
+        for (int j = 0; j < BATCH_K; j++) {
+            append_on_csv_delay(csv_wait, infinite_wait[j][i], j , i);
+        }
+        fclose(csv_wait);
+    }
+}
+

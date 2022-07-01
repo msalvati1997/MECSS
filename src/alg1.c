@@ -1,4 +1,4 @@
-#include "../include/config.h"
+#include "../include/config1.h"
 #include "../include/rngs.h"
 #include "../include/rvgs.h"
 #include "../include/rvms.h"
