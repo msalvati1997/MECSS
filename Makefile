@@ -34,13 +34,19 @@ debug_infinite_alg2:
 	gcc  src/alg2.c lib/rvgs.c lib/rvms.c lib/rngs.c lib/utils.c -lm -g -o out -DDEBUG 
 	./out INFINITE > ./results/alg2/infinite/debug_infinite_alg2.txt
 
-clean:
+clean: 
 	rm out
-	rm *.csv
-	rm ./results/alg1/finite/*.csv
-	rm ./results/alg1/infinite/*.csv
-	rm ./results/alg2/finite/*.csv
-	rm ./results/alg2/infinite/*.csv
+
+clean_infinite:
+	rm results/alg1/infinite/*.csv
+	rm results/alg1/infinite/*.txt
+	rm results/alg2/infinite/*.csv
+	rm results/alg2/infinite/*.txt
+clean_finite:
+	rm results/alg1/finite/*.csv
+	rm results/alg1/infinite/*.txt
+	rm results/alg2/finite/*.csv
+	rm results/alg2/infinite/*.txt
 
 
 %:
