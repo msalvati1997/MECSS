@@ -37,14 +37,19 @@ debug_infinite_alg2:
 clean: 
 	rm out
 
-clean_infinite:
+clean_infinite_alg1:
 	rm results/alg1/infinite/*.csv
 	rm results/alg1/infinite/*.txt
+
+clean_infinite_alg2:
 	rm results/alg2/infinite/*.csv
 	rm results/alg2/infinite/*.txt
-clean_finite:
+
+clean_finite_alg1:
 	rm results/alg1/finite/*.csv
 	rm results/alg1/infinite/*.txt
+
+clean_finite_alg2:	
 	rm results/alg2/finite/*.csv
 	rm results/alg2/infinite/*.txt
 
@@ -53,6 +58,10 @@ clean_finite:
 	@echo Available targets:
 	@echo "  help"
 	@echo "  clean"
+	@echo "  clean_finite_alg1"
+	@echo "  clean_finite_alg2"
+	@echo "  clean_infinite_alg1"
+	@echo "  clean_infinite_alg2"
 	@echo "  release_finite_alg1"
 	@echo "  release_finite_alg2"
 	@echo "  release_infinite_alg1"
