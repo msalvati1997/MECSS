@@ -1,5 +1,0 @@
-TYPE : INFINITE
-INFINITE HORIZON SIMULATION
-
-
-==== Infinite Horizon Simulation | #batch 128====Simulation Progress: |█                                                 | 03%Simulation Progress: |██                                                | 03%Simulation Progress: |██

@@ -722,7 +722,7 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(mu, lambda_i);
+        double throughput = my_min(blocks[i].num_servers*mu, lambda_i);
         
         double visit = throughput / external_arrival_rate;
         visit_rt += visit * wait;
@@ -761,7 +761,7 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         double external_arrival_rate = 1 / (currentClock / blocks[0].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(mu, lambda_i);
+        double throughput = my_min(blocks[i].num_servers*mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit; 
     }
@@ -860,7 +860,7 @@ void print_statistics(double currentClock) {
 
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(mu, lambda_i);
+        double throughput = my_min(blocks[i].num_servers*mu, lambda_i);
 
         printf("\n\n======== Result for block %s ========\n", stringFromEnum(blocks[i].type));
         printf("Number of Servers ................... = %d\n",blocks[i].num_servers);
@@ -922,7 +922,7 @@ void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
         double lambda_i = 1 / inter;
         double mu = 1 / service;
-        double throughput = my_min(mu, lambda_i);
+        double throughput = my_min(blocks[i].num_servers*mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
         double utilization = lambda_i/(blocks[i].num_servers*mu);
@@ -956,7 +956,7 @@ void calculate_statistics_for_each_block(block blocks[], double currentClock, do
         double external_arrival_rate = 1 / (currentClock / blocks[CONTROL_UNIT].total_arrivals);
         lambda_i = 1 / inter;    
         double mu = 1 / service;
-        double throughput = my_min(mu, lambda_i);
+        double throughput = my_min(blocks[i].num_servers*mu, lambda_i);
         double visit = throughput / external_arrival_rate;
         visit_rt += wait * visit;
         double utilization = lambda_i/(blocks[i].num_servers*mu);
