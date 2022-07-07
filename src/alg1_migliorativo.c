@@ -30,7 +30,6 @@ void printJobInfo(job * j);
 int deleteElement(sorted_completions *compls, compl completion);
 int getDestination(enum block_types from, int type);
 int routing_to_cloud();
-void intermittent_wlan();
 int binarySearch(sorted_completions *compls, int low, int high, compl completion);
 FILE *open_csv(char *filename);
 FILE *open_csv_appendMode(char *filename);
@@ -235,8 +234,7 @@ void enqueue(block *block_t, double arrival, int type) {
 }
 
 void printQueue(job *j) {
-    //job *tmp = (job *)malloc(sizeof(job));
-    //tmp=j;
+   
     printJobInfo(j);
     while(j->next!=NULL) {
         j = j->next;
@@ -290,7 +288,6 @@ server *findFreeServer(int block_type) {
 void process_arrival() {
     print_line();
     DEBUG_PRINT("PROCESSO DI UN ARRIVO DALL'ESTERNO DEL SISTEMA\n");
-    //blocks[0].total_arrivals++;
     blocks[0].jobInBlock++;
     blocks[0].total_arrivals++;
 
@@ -460,7 +457,6 @@ void process_completion(compl c) {
 //Fornisce il codice del blocco di destinazione partendo dal blocco di controllo iniziale
 //logica del dispatcher
 int routing_to_cloud() {
-    //intermittent_wlan();
 double random = Uniform(0, 1);
        if(random<=P_WLAN_CHOICE) {
           return WLAN_UNIT;
@@ -468,25 +464,6 @@ double random = Uniform(0, 1);
           return ENODE_UNIT;
        }
    }
-
-
-//Thread che disattiva la WLAN essendo un server intermittente 
-void intermittent_wlan() {
-    DEBUG_PRINT("INTERMITTENT WLAN\n");
-    double random = Uniform(0,1);
-    if(random<=P_OFF_WLAN) {
-        DEBUG_PRINT("WLAN OFF\n");
-        (*wlan_unit)->need_resched=true;
-        (*wlan_unit+1)->need_resched=true;
-    } else {
-        DEBUG_PRINT("WLAN ON\n");
-        (*wlan_unit)->need_resched=false;
-        (*wlan_unit+1)->need_resched=false;
-        (*wlan_unit)->online=ONLINE;
-        (*wlan_unit+1)->online=ONLINE;
-    }
-}
-
 
 
 

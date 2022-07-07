@@ -29,7 +29,6 @@ void printJobInfo(job * j);
 int deleteElement(sorted_completions *compls, compl completion);
 int getDestination(enum block_types from, int type);
 int routing_to_cloud();
-void intermittent_wlan();
 int binarySearch(sorted_completions *compls, int low, int high, compl completion);
 FILE *open_csv(char *filename);
 FILE *open_csv_appendMode(char *filename);
