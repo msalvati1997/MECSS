@@ -1,5 +1,7 @@
-# MECSS
-Mobile Edge Cloud Simulating System
+A MOBILE EDGE COMPUTING ARCHITECTURE SYSTEM BASED ON THE VIDEO STREAMING CASE STUDY
+==================
+Progetto di Modellistica, simulazione e valutazione delle prestazioni
+-----------------------------
 
  Project's description
 ==================
@@ -65,6 +67,7 @@ The project's results are located in the ./results folder and are divided by sim
 Csv files were used to graph the results and carry out statistical studies.
 
 Author
-=======================
-- [Martina Salvati](https://github.com/msalvati1997) 
-- [Simone Benedetti](https://github.com/simobenny8)
+======================= 
+- [Martina Salvati](https://github.com/msalvati1997)   (0292307)
+- [Simone Benedetti](https://github.com/simobenny8)    (0295308)
+
