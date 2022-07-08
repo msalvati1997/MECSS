@@ -49,7 +49,7 @@ double my_min(double x, double y);
 void print_sorted_list();
 void finite_horizon_run(int stop_time, int repetition);
 void finite_horizon_simulation(int stop_time, int repetitions);
-void calculate_statistics_clock(block blocks[], double currentClock);
+void calculate_statistics_clock(block blocks[], double currentClock,int numRepetition);
 void calculate_statistics_for_each_block(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_BLOCKS][NUM_METRICS_BLOCKS], int rep);
 void print_statistics(double currentClock);
 void calculate_statistics_fin(block blocks[], double currentClock, double rt_arr[NUM_REPETITIONS][NUM_METRICS], int rep);
@@ -538,7 +538,7 @@ void finite_horizon_run(int stop_time, int repetition) {
         }
         if (clock.current >= (n-1) * 5000 && clock.current < n * 5000 && completed>16) {            
             DEBUG_PRINT("calculate statistic interno \n ");
-            calculate_statistics_clock(blocks, clock.current);
+            calculate_statistics_clock(blocks, clock.current,repetition);
             n++;
         }
     }
@@ -558,7 +558,7 @@ void finite_horizon_run(int stop_time, int repetition) {
 
 // Esegue le ripetizioni di singole run a orizzonte finito
 void finite_horizon_simulation(int stop_time, int repetitions) {
-    PlantSeeds(231232132);
+    PlantSeeds(613204315);
     DEBUG_PRINT("finite horizon simulation\n");
     DEBUG_PRINT("\n\n==== Finite Horizon Simulation | sim_time %f | #repetitions #%d ====", STOP, NUM_REPETITIONS);
     DEBUG_PRINT("\n\n");
@@ -578,7 +578,7 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 // Esegue una simulazione ad orizzonte infinito tramite il metodo delle batch means
 void infinite_horizon_simulation() {
     printf("\n\n==== Infinite Horizon Simulation | #batch %d====", BATCH_K);
-    PlantSeeds(231232132);
+    PlantSeeds(100147242);
     int b = BATCH_B;
     allocate_memory();
     initialize();
@@ -713,14 +713,16 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
     rt_arr[pos][2]= *seed;
 }
 // Calcola le statistiche ogni 20 minuti per l'analisi nel continuo
-void calculate_statistics_clock(block blocks[], double currentClock) {
+void calculate_statistics_clock(block blocks[], double currentClock,int numRepetition) {
     print_line();
-    DEBUG_PRINT("calculate staticts clock\n");
-    char* filename = "results/alg1_migliorativo/finite/continuos_finite.csv";
+    DEBUG_PRINT("calculate statistics clock\n");
+    char* filename = malloc(100);
+    sprintf(filename,"results/alg1_migliorativo/finite/continuos_finite_%d.csv",numRepetition);
+    //char* filename = "results/alg1_migliorativo/finite/continuos_finite.csv";
     FILE *csv;
     csv = open_csv_appendMode(filename);
     if(init_csv==0) {
-        fprintf(csv, "response time (ms), current time\n");
+        fprintf(csv, "response time (ms), current time, seed\n");
         init_csv=init_csv+1;
     }
     double visit_rt = 0;
@@ -743,7 +745,9 @@ void calculate_statistics_clock(block blocks[], double currentClock) {
         visit_rt += wait * visit; 
     }
     double energy =visit_rt/ 3600.0;
-    fprintf(csv, "%2.6f, %2.6f\n", visit_rt, clock.current);
+    long seed;
+    GetSeed(&seed);
+    fprintf(csv, "%2.6f, %2.6f, %ld\n", visit_rt, clock.current,seed);
     fclose(csv);
 }
 

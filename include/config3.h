@@ -39,7 +39,7 @@
 #define INTERNAL 7 //arrivo interno 
 #define EXIT 32
 #define P_INTERNAL 0.4
-#define P_WLAN_CHOICE 0.428571
+#define P_WLAN_CHOICE 1.0 - 0.428571
 #define P_OFF_WLAN 0.11
 // Numero di ripetizioni e batch
 #define NUM_REPETITIONS 128
