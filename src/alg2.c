@@ -706,9 +706,9 @@ void calculate_statistics_inf(block blocks[], double currentClock, double rt_arr
 void calculate_statistics_clock(block blocks[], double currentClock,int numRepetition) {
     print_line();
     DEBUG_PRINT("calculate staticts clock\n");
-    //char* filename = "results/alg2/finite/continuos_finite.csv";
-    char* filename = malloc(100);
-    sprintf(filename,"results/alg2/finite/continuos_finite_%d.csv",numRepetition);
+    char* filename = "results/alg2/finite/continuos_finite.csv";
+    //char* filename = malloc(100);
+    //sprintf(filename,"results/alg2/finite/continuos_finite_%d.csv",numRepetition);
     FILE *csv;
     csv = open_csv_appendMode(filename);
     if(init_csv==0) {
