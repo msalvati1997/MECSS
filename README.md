@@ -11,7 +11,6 @@ The aim of the project is to implement a study on a video content offload algori
 Video streaming is transmitted in less than 1 second, typically 100-500 milliseconds.
 When real-time video services are being provided to individual users such as video streaming is important:
 - minimize the total execution time. (less than 500 milliseconds)
-- minimize the total energy consumption of the devices.
 
 
 
