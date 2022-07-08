@@ -1,6 +1,7 @@
 A MOBILE EDGE COMPUTING ARCHITECTURE SYSTEM BASED ON THE VIDEO STREAMING CASE STUDY
 ==================
-Progetto di Modellistica, simulazione e valutazione delle prestazioni
+Modeling, simulation and performance evaluation's project
+A.A 2021/2022
 -----------------------------
 
  Project's description
