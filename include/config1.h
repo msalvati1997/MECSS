@@ -17,15 +17,6 @@
 #define EDGE_PROCESSING_TIME  35.0
 #define CLOUD_PROCESSING_TIME  10.0
 
-//Power Consuming in kWh
-#define CONTROL_UNIT_PC 0.065
-#define VIDEO_UNIT_PC 0.0025
-#define WLAN_UNIT_PC 0.008
-#define ENODE_UNIT_PC 0.08
-#define EDGE_UNIT_PC 0.00117
-#define CLOUD_UNIT_PC 0.1
-
-
 //delay
 #define DELAY_FROM_EDGE_TO_CLOUD 1.0
 #define DELAY_TO_EDGE 0.1
