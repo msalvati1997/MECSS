@@ -568,7 +568,7 @@ void finite_horizon_simulation(int stop_time, int repetitions) {
 // Esegue una simulazione ad orizzonte infinito tramite il metodo delle batch means
 void infinite_horizon_simulation() {
     printf("\n\n==== Infinite Horizon Simulation | #batch %d====", BATCH_K);
-    PlantSeeds(1643940741);
+    PlantSeeds(1000000000);
     int b = BATCH_B;
     allocate_memory();
     initialize();
