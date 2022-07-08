@@ -61,7 +61,7 @@ Available targets:
 ```
 Results
  -----------------------------
-The project's results are located in the results folder and are divided by simulation and algorithm type. 
+The project's results are located in the ./results folder and are divided by simulation and algorithm type. 
 Csv files were used to graph the results and carry out statistical studies.
 
 Author
