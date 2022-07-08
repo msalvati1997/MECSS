@@ -5,12 +5,12 @@ Progetto di Modellistica, simulazione e valutazione delle prestazioni
 
  Project's description
 ==================
-Lo streaming video e i giochi per computer sono tra i media più popolari e con il più alto consumo di larghezza di banda in Internet. I contenuti video consumano oggi circa il 70% dell'utilizzo totale della larghezza di banda in Internet. I progressi negli strumenti di generazione multimediale, l'elevata potenza di elaborazione e la connettività ad alta velocità hanno consentito la generazione di contenuti multimediali live, interattivi e multi-view. L’edge computing ha lo scopo di fornire risorse di storage e computazionali vicino all'utente all'edge della rete, per ridurre al minimo la latenza e i tempi di risposta. L'edge computing estende  i servizi e le risorse cloud alla fine della rete per fornire una latenza molto bassa e una comunicazione in tempo reale.
-Lo scopo del progetto è implementare uno studio su un algoritmo di offload dei contenuti video che mira all'ottimizzazione congiunta in termini di ritardo e consumo energetico. 
-Lo streaming video viene trasmesso in meno di 1 secondo, in genere 100-500 millisecondi.
-Quando i servizi video in tempo reale vengono forniti a singoli utenti come lo streaming video è importante:
-- ridurre al minimo il tempo di esecuzione totale. (inferiore ai 500 millisecondi)
--	ridurre al minimo il consumo totale di energia dei dispositivi.
+Video streaming and computer games are among the most popular and bandwidth-consuming media on the Internet. Video content consumes about 70% of total Internet bandwidth usage today. Advances in multimedia generation tools, high processing power and high-speed connectivity have enabled the generation of live, interactive and multi-view multimedia content. Edge computing aims to provide storage and computational resources close to the user at the network edge, to minimize latency and response times. Edge computing extends cloud resources to the end of the service network to provide very low latency and real-time communication.
+The aim of the project is to implement a study on a video content offload algorithm that aims to optimize both in terms of delay and energy consumption.
+Video streaming is transmitted in less than 1 second, typically 100-500 milliseconds.
+When real-time video services are being provided to individual users such as video streaming is important:
+- minimize the total execution time. (less than 500 milliseconds)
+- minimize the total energy consumption of the devices.
 
 
 
@@ -69,5 +69,5 @@ Csv files were used to graph the results and carry out statistical studies.
 Author
 ======================= 
 - [Martina Salvati](https://github.com/msalvati1997)   (0292307)
-- [Simone Benedetti](https://github.com/simobenny8)    (0295308)
+- [Simone Benedetti](https://github.com/simobenny8)    (0295385)
 
